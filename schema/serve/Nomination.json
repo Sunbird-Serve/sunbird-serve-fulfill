@@ -1,0 +1,54 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema",
+	"type": "object",
+	"properties": {
+		"Nomination": {
+			"$ref": "#/definitions/Nomination"
+		}
+	},
+	"required": ["Nomination"],
+	"title": "Nomination",
+	"definitions": {
+		"Nomination": {
+			"$id": "#/properties/NominationDetails",
+			"type": "object",
+			"title": "Nomination Details schema",
+			"required": ["needId", "nominateDetails"],
+			"properties": {
+				"needId": { "type": "string" },
+				"nominationDetails": {
+					"type": "array",
+					"items": {
+						"$ref": "#/definitions/NominationDetails"
+					}
+				}
+			}
+		},
+		"NominationDetails": {
+			"$id": "#/definitions/NominationDetails",
+			"type": "object",
+			"title": "Nominate Detail schema",
+			"required": ["nominatedUserId", "nominatedDate", "nominationStatus"],
+			"properties": {
+				"nominatedUserId": { "type": "string" },
+				"nominatedDate": {
+					"type": "string",
+					"format": "date-time"
+				},
+				"nominationStatus": {
+					"type": "string",
+					"enum": ["Nominated", "Approved", "Proposed", "Rejected"]
+				},
+				"comments": { "type": "string" }
+			}
+		}
+	},
+	"_osConfig": {
+			"systemFields": [
+			"osCreatedAt",
+			"osUpdatedAt",
+			"osCreatedBy",
+			"osUpdatedBy"
+		]
+	}
+}

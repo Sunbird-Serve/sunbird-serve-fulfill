@@ -1,0 +1,49 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema",
+	"type": "object",
+	"properties": {
+		"FulfillmentDetails": {
+			"$ref": "#/definitions/FulfillmentDetails"
+		}
+	},
+	"required": ["FulfillmentDetails"],
+	"title": "FulfillmentDetails",
+	"definitions": {
+		"FulfillmentDetails": {
+			"$id": "#/properties/FulfillmentDetails",
+			"type": "object",
+			"title": "Fulfillment Details schema",
+			"required": ["needId","assigned_userId","coord_userId"],
+			"properties": {
+				"needId": { "type": "string" },
+				"assigned_userId": {
+          					"type": "string"
+        					},
+				"coord_userId": {
+          					"type": "string"
+        					},
+				"assignedDate": {
+          					"type": "string",
+          					"format": "date-time"
+        					},									
+				"status": { 
+                                                                     "type": "string" ,
+                                                                      "enum": ["Not Started",
+                                                                                     "Scheduled",
+                                                                                     "In Progress",
+                                                                                     "Completed",
+                                                                                     "Cancelled"]},
+				"fulfillmentDetails": { "type": "string" }
+			}
+		}
+	},
+	"_osConfig": {
+		"systemFields": [
+     			 "osCreatedAt",
+      			"osUpdatedAt",
+      			"osCreatedBy",
+     			 "osUpdatedBy"
+    		]
+		
+	}
+}
