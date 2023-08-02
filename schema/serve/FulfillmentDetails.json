@@ -16,10 +16,10 @@
 			"required": ["needId","assigned_userId","coord_userId"],
 			"properties": {
 				"needId": { "type": "string" },
-				"assigned_userId": {
+				"assignedUserId": {
           					"type": "string"
         					},
-				"coord_userId": {
+				"coordUserId": {
           					"type": "string"
         					},
 				"assignedDate": {
