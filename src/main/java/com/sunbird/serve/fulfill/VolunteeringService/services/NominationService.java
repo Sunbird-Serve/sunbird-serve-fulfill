@@ -45,6 +45,17 @@ public class NominationService {
         return nominationRepository.save(nomination);
     }
 
+    //update nomination as confirm or reject
+    public Nomination updateNomination(String userId, String nominationId, NominationStatus status, Map<String, String> headers) {
+        Nomination nomination = nominationRepository.findById(UUID.fromString(nominationId)).get();
+        //Need need = needRepository.findById(UUID.fromString(nomination.getNeedId())).get();
+
+        nomination.setNominationStatus(status);
+        //need.setStatus(NeedStatus.valueOf(status.name()));
+        //needRepository.save(need);
+        return nominationRepository.save(nomination);
+    }
+
     public List<Nomination> getAllNominations(String needId, Map<String, String> headers) {
         return nominationRepository.findAllByNeedId(needId);
     }

@@ -35,6 +35,7 @@ import java.util.Map;
 
 
 @RestController
+@CrossOrigin(origins = "*")
 public class NominationController {
 
     private final NominationService nominationService;
@@ -45,36 +46,62 @@ public class NominationController {
     }
 
     //Nominate a need
-    @Operation(summary = "Raise a Need by filling in request body", description = "Initiate the process of raising a new Need")
+    @Operation(summary = "User Nominate a Need", description = "Nominate a Need")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully Raised Need", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
+            @ApiResponse(responseCode = "200", description = "Successfully Nominated a Need", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
             @ApiResponse(responseCode = "400", description = "Bad Input"),
             @ApiResponse(responseCode = "500", description = "Server Error")}
     )
-    @PostMapping("/serve-fulfill/nomination/nominate")
-    public ResponseEntity<Nomination> nominateNeed(@RequestBody NominationRequest request) {
+    @PostMapping("/serve-fulfill/nomination/{needId}/nominate/{nominatedUserId}")
+    public ResponseEntity<Nomination> nominateNeed( @PathVariable String needId,
+            @PathVariable String nominatedUserId,
+            @RequestHeader Map<String, String> headers) {
+
+        NominationRequest request = new NominationRequest();
+        request.setNeedId(needId);
+        request.setNominatedUserId(nominatedUserId);
+        request.setComments("");
+        request.setStatus(NominationStatus.Nominated);
         Nomination response = nominationService.nominateNeed(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping("/serve-fulfill/nomination/read")
-    public ResponseEntity<List<Nomination>> getAllNominations(@RequestParam String needId, @RequestHeader Map<String, String> headers) {
+
+    //Confirm or reject the nomination
+    @Operation(summary = "Confirm/Reject the nomination", description = "Confirm/Reject the nomination")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully Nominated a Need", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
+            @ApiResponse(responseCode = "400", description = "Bad Input"),
+            @ApiResponse(responseCode = "500", description = "Server Error")}
+    )
+    @PostMapping("/serve-fulfill/nomination/{needId}/nominate/{nominatedUserId}/confirm/{nominationId}")
+    public ResponseEntity<Nomination> updateNomination( @PathVariable String nominatedUserId,
+            @PathVariable String nominationId,
+            @RequestParam(required = true) NominationStatus status,
+            @RequestHeader Map<String, String> headers) {
+
+        Nomination nominations = nominationService.updateNomination(nominatedUserId,nominationId,status, headers);
+        return ResponseEntity.ok(nominations);
+    }
+
+    @GetMapping("/serve-fulfill/nomination/{needId}/nominate")
+    public ResponseEntity<List<Nomination>> getAllNominations(@PathVariable String needId, @RequestHeader Map<String, String> headers) {
         List<Nomination> nominations = nominationService.getAllNominations(needId, headers);
         return ResponseEntity.ok(nominations);
     }
 
-    @GetMapping("/serve-fulfill/nomination/status")
+    @GetMapping("/serve-fulfill/nomination/{needId}/nominate/{status}")
     public ResponseEntity<List<Nomination>> getAllNominationsByStatus(
-            @RequestParam String needId,
-            @RequestParam NominationStatus status,
+            @PathVariable String needId,
+            @PathVariable NominationStatus status,
             @RequestHeader Map<String, String> headers) {
         List<Nomination> nominations = nominationService.getAllNominationsByStatus(needId, status, headers);
         return ResponseEntity.ok(nominations);
     }
 
-    @GetMapping("/serve-fulfill/nomination/user")
+    @GetMapping("/serve-fulfill/nomination/{nominatedUserId}")
     public ResponseEntity<List<Nomination>> getAllNominationForUser(
-            @RequestParam String nominatedUserId,
+            @PathVariable String nominatedUserId,
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
             @RequestHeader Map<String, String> headers) {
