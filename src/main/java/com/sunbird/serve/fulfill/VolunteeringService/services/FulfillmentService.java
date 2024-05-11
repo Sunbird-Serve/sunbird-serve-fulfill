@@ -43,7 +43,7 @@ public class FulfillmentService {
     public FulfillmentService(FulfillmentRepository fulfillmentRepository, 
     WebClient.Builder webClientBuilder, FulfillmentRequest fulfillmentRequest) {
         this.fulfillmentRepository = fulfillmentRepository;
-        this.webClient = webClientBuilder.baseUrl("http://localhost:9000").build();
+        this.webClient = webClientBuilder.baseUrl("https://serve-v1.evean.net").build();
         this.fulfillmentRequest = fulfillmentRequest;
     }
 

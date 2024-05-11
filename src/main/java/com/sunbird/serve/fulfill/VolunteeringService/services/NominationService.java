@@ -51,7 +51,7 @@ public class NominationService {
     FulfillmentRequest fulfillmentRequest,
     FulfillmentService fulfillmentService) {
         this.nominationRepository = nominationRepository;
-        this.webClient = webClientBuilder.baseUrl("http://localhost:9000").build();
+        this.webClient = webClientBuilder.baseUrl("https://serve-v1.evean.net").build();
         this.needPlanRequest = needPlanRequest;
         this.fulfillmentRequest = fulfillmentRequest;
         this.fulfillmentService = fulfillmentService;
