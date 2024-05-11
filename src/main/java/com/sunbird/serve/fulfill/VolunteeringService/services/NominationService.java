@@ -6,10 +6,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 import com.sunbird.serve.fulfill.models.Nomination.Nomination;
 import com.sunbird.serve.fulfill.models.enums.NominationStatus;
+import com.sunbird.serve.fulfill.models.enums.FulfillmentStatus;
 import com.sunbird.serve.fulfill.models.enums.NeedStatus;
 import com.sunbird.serve.fulfill.models.request.NominationRequest;
 import com.sunbird.serve.fulfill.models.request.NeedPlanRequest;
 import com.sunbird.serve.fulfill.models.request.NeedRequest;
+import com.sunbird.serve.fulfill.models.request.NeedPlanResponse;
+import com.sunbird.serve.fulfill.models.Need.NeedPlan;
+import com.sunbird.serve.fulfill.models.request.FulfillmentRequest;
 import com.sunbird.serve.fulfill.models.request.NeedRequirementRequest;
 import java.util.List;
 
@@ -38,13 +42,19 @@ public class NominationService {
     private final NominationRepository nominationRepository;
     private final WebClient webClient;
     private final NeedPlanRequest needPlanRequest;
+    private final FulfillmentRequest fulfillmentRequest;
+    private final FulfillmentService fulfillmentService;
 
     @Autowired
     public NominationService(NominationRepository nominationRepository, 
-    WebClient.Builder webClientBuilder, NeedPlanRequest needPlanRequest) {
+    WebClient.Builder webClientBuilder, NeedPlanRequest needPlanRequest,
+    FulfillmentRequest fulfillmentRequest,
+    FulfillmentService fulfillmentService) {
         this.nominationRepository = nominationRepository;
         this.webClient = webClientBuilder.baseUrl("http://localhost:9000").build();
         this.needPlanRequest = needPlanRequest;
+        this.fulfillmentRequest = fulfillmentRequest;
+        this.fulfillmentService = fulfillmentService;
     }
 
     public Nomination nominateNeed(NominationRequest nominationRequest) {
@@ -61,14 +71,18 @@ public class NominationService {
         //Need need = needRepository.findById(UUID.fromString(nomination.getNeedId())).get();
 
         nomination.setNominationStatus(status);
-        //need.setStatus(NeedStatus.valueOf(status.name()));
-        //needRepository.save(need);
+    
         // Call the createNeedPlan API
-        callCreateNeedPlanApi(needPlanRequest,nomination.getNeedId(), headers);
+        String needPlanId = callCreateNeedPlanApi(needPlanRequest,nomination.getNeedId(), headers);
+
+        // Create Fulfillment Details for this need
+        createFulfillmentDetails(fulfillmentRequest, nomination.getNeedId(), needPlanId, nomination.getNominatedUserId(), headers);
+        
         return nominationRepository.save(nomination);
     }
 
-    private void callCreateNeedPlanApi(NeedPlanRequest request, String needId, Map<String, String> headers) {
+    private String callCreateNeedPlanApi(NeedPlanRequest request, String needId, 
+    Map<String, String> headers) {
         String apiNeedUrl = "/api/v1/serve-need/need/"+needId;
         String apiUrl = "/api/v1/serve-need/need-plan/create";
         String apiNeedReqUrl = "/api/v1/serve-need/need-requirement/";
@@ -90,24 +104,53 @@ public class NominationService {
             .bodyToMono(NeedRequirementRequest.class)
             .block(); 
 
+
         request.setNeedId(needId);
-        request.setAssignedUserId(needRequest.getUserId());
         request.setName(needRequest.getName());
         request.setStatus(NeedStatus.Approved);
         request.setOccurrenceId(needRequirementRequest.getOccurrenceId());
 
-        webClient.post()
+        ResponseEntity<NeedPlan> responseEntity = webClient.post()
                 .uri(apiUrl)
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .headers(httpHeaders -> headers.forEach(httpHeaders::set))
                 .body(Mono.just(request), NeedPlanRequest.class)
-                .retrieve()
-                .toBodilessEntity()
+                .exchangeToMono(response -> response.toEntity(NeedPlan.class))
                 .block(); 
+
+        System.out.println("Response Body: " + responseEntity.getBody());
+
+        // Extract the newly created Need Plan ID from the response
+        String needPlanId = null;
+        if (responseEntity != null && responseEntity.getBody() != null) {
+            needPlanId = responseEntity.getBody().getId().toString();
+        }
+        
+        return needPlanId;
     }
 
 
-     
+     private void createFulfillmentDetails(FulfillmentRequest request, String needId, 
+     String needPlanId,
+     String assignedUserId,
+     Map<String, String> headers) {
+       
+        String apiNeedUrl = "/api/v1/serve-need/need/"+needId;
+        // Get Need details
+        NeedRequest needRequest = webClient.get()
+            .uri(apiNeedUrl, needId)
+            .headers(httpHeaders -> headers.forEach(httpHeaders::set))
+            .retrieve()
+            .bodyToMono(NeedRequest.class)
+            .block(); 
+
+        request.setNeedId(needId);
+        request.setNeedPlanId(needPlanId);
+        request.setAssignedUserId(assignedUserId);
+        request.setCoordUserId(needRequest.getUserId());
+        request.setFulfillmentStatus(FulfillmentStatus.InProgress);
+        fulfillmentService.createFulfillment(request);
+    }
 
     public List<Nomination> getAllNominations(String needId, Map<String, String> headers) {
         return nominationRepository.findAllByNeedId(needId);

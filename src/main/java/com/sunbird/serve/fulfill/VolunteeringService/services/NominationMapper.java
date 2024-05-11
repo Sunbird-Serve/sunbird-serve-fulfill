@@ -3,6 +3,9 @@ package com.sunbird.serve.fulfill;
 import com.sunbird.serve.fulfill.models.request.NominationRequest;
 import com.sunbird.serve.fulfill.models.enums.NominationStatus;
 import com.sunbird.serve.fulfill.models.Nomination.Nomination;
+import com.sunbird.serve.fulfill.models.request.FulfillmentRequest;
+import com.sunbird.serve.fulfill.models.enums.FulfillmentStatus;
+import com.sunbird.serve.fulfill.models.Nomination.Fulfillment;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.UUID;
@@ -20,6 +23,18 @@ public class NominationMapper {
         // Set any other fields...
 
         return nomination;
+    }
+
+    public static Fulfillment mapToEntityFulfill(FulfillmentRequest fulfillmentRequest) {
+        Fulfillment fulfillment = new Fulfillment();
+        fulfillment.setNeedId(fulfillmentRequest.getNeedId());
+        fulfillment.setNeedPlanId(fulfillmentRequest.getNeedPlanId());
+        fulfillment.setAssignedUserId(fulfillmentRequest.getAssignedUserId());
+        fulfillment.setCoordUserId(fulfillmentRequest.getCoordUserId());
+        fulfillment.setFulfillmentStatus(FulfillmentStatus.InProgress); // Set default status or customize as needed
+        // Set any other fields...
+
+        return fulfillment;
     }
 
     // Add other mapping methods as needed

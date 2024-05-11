@@ -1,6 +1,6 @@
 package com.sunbird.serve.fulfill.models.request;
 
-import com.sunbird.serve.fulfill.models.enums.NeedStatus;
+import com.sunbird.serve.fulfill.models.enums.FulfillmentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,10 +13,11 @@ import org.springframework.stereotype.Component;
 @NoArgsConstructor
 @AllArgsConstructor
 @Component
-public class NeedPlanRequest {
-   private String fulfillmentId;
+public class FulfillmentRequest {
    private String needId;
-   private String name;
-   private NeedStatus status;
+   private String needPlanId;
+   private String assignedUserId;
+   private String coordUserId;
+   private FulfillmentStatus fulfillmentStatus;
    private String occurrenceId;
 }
