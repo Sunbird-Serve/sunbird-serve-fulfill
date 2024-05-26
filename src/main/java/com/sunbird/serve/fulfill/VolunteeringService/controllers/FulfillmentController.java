@@ -1,5 +1,6 @@
-package com.sunbird.serve.fulfill;
+package com.sunbird.serve.fulfill.VolunteeringService.controllers;
 
+import com.sunbird.serve.fulfill.VolunteeringService.services.FulfillmentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -63,8 +64,8 @@ public class FulfillmentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    //Fetch Fulfillment for Assigned User Id
-    @Operation(summary = "Fulfilment Details For Assigned User Id", description = "Fetch Fulfillment Details")
+    //Fetch Fulfillment for Assigned UserResponse Id
+    @Operation(summary = "Fulfilment Details For Assigned UserResponse Id", description = "Fetch Fulfillment Details")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully Fetched Fulfillment Details", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
             @ApiResponse(responseCode = "400", description = "Bad Input"),

@@ -1,9 +1,14 @@
-package com.sunbird.serve.fulfill;
+package com.sunbird.serve.fulfill.VolunteeringService.services;
 
+import com.sunbird.serve.fulfill.NominationMapper;
+import com.sunbird.serve.fulfill.VolunteeringService.repositories.NominationRepository;
+import com.sunbird.serve.fulfill.models.needresponse.NeedResponse;
+import com.sunbird.serve.fulfill.models.userresponse.UserResponse;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
 import com.sunbird.serve.fulfill.models.Nomination.Nomination;
 import com.sunbird.serve.fulfill.models.enums.NominationStatus;
 import com.sunbird.serve.fulfill.models.enums.FulfillmentStatus;
@@ -11,32 +16,28 @@ import com.sunbird.serve.fulfill.models.enums.NeedStatus;
 import com.sunbird.serve.fulfill.models.request.NominationRequest;
 import com.sunbird.serve.fulfill.models.request.NeedPlanRequest;
 import com.sunbird.serve.fulfill.models.request.NeedRequest;
-import com.sunbird.serve.fulfill.models.request.NeedPlanResponse;
 import com.sunbird.serve.fulfill.models.Need.NeedPlan;
 import com.sunbird.serve.fulfill.models.request.FulfillmentRequest;
 import com.sunbird.serve.fulfill.models.request.NeedRequirementRequest;
 import java.util.List;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.web.bind.annotation.RequestParam;
-import io.swagger.v3.oas.annotations.Parameter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.*;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.http.MediaType;
 import org.springframework.http.HttpHeaders;
 import reactor.core.publisher.Mono;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.Optional;
 import java.util.UUID;
 import java.util.Map;
 
 
 @Service
+@Slf4j
 public class NominationService {
 
     private final NominationRepository nominationRepository;
@@ -45,16 +46,24 @@ public class NominationService {
     private final FulfillmentRequest fulfillmentRequest;
     private final FulfillmentService fulfillmentService;
 
+    private final RestTemplate restTemplate;
+
+
     @Autowired
-    public NominationService(NominationRepository nominationRepository, 
-    WebClient.Builder webClientBuilder, NeedPlanRequest needPlanRequest,
-    FulfillmentRequest fulfillmentRequest,
-    FulfillmentService fulfillmentService) {
+    private JavaMailSender javaMailSender;
+
+    @Autowired
+    public NominationService(NominationRepository nominationRepository,
+                             WebClient.Builder webClientBuilder, NeedPlanRequest needPlanRequest,
+                             FulfillmentRequest fulfillmentRequest,
+                             FulfillmentService fulfillmentService, RestTemplate restTemplate) {
         this.nominationRepository = nominationRepository;
         this.webClient = webClientBuilder.baseUrl("https://serve-v1.evean.net").build();
         this.needPlanRequest = needPlanRequest;
         this.fulfillmentRequest = fulfillmentRequest;
         this.fulfillmentService = fulfillmentService;
+        this.restTemplate = restTemplate;
+        this.restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
     }
 
     public Nomination nominateNeed(NominationRequest nominationRequest) {
@@ -71,17 +80,17 @@ public class NominationService {
         //Need need = needRepository.findById(UUID.fromString(nomination.getNeedId())).get();
 
         nomination.setNominationStatus(status);
-    
+
         // Call the createNeedPlan API
         String needPlanId = callCreateNeedPlanApi(needPlanRequest,nomination.getNeedId(), headers);
 
         // Create Fulfillment Details for this need
         createFulfillmentDetails(fulfillmentRequest, nomination.getNeedId(), needPlanId, nomination.getNominatedUserId(), headers);
-        
+
         return nominationRepository.save(nomination);
     }
 
-    private String callCreateNeedPlanApi(NeedPlanRequest request, String needId, 
+    private String callCreateNeedPlanApi(NeedPlanRequest request, String needId,
     Map<String, String> headers) {
         String apiNeedUrl = "/api/v1/serve-need/need/"+needId;
         String apiUrl = "/api/v1/serve-need/need-plan/create";
@@ -93,7 +102,7 @@ public class NominationService {
             .headers(httpHeaders -> headers.forEach(httpHeaders::set))
             .retrieve()
             .bodyToMono(NeedRequest.class)
-            .block(); 
+            .block();
 
         apiNeedReqUrl = apiNeedReqUrl+needRequest.getRequirementId();
         // Get Need Requirement details
@@ -102,7 +111,7 @@ public class NominationService {
             .headers(httpHeaders -> headers.forEach(httpHeaders::set))
             .retrieve()
             .bodyToMono(NeedRequirementRequest.class)
-            .block(); 
+            .block();
 
 
         request.setNeedId(needId);
@@ -116,7 +125,7 @@ public class NominationService {
                 .headers(httpHeaders -> headers.forEach(httpHeaders::set))
                 .body(Mono.just(request), NeedPlanRequest.class)
                 .exchangeToMono(response -> response.toEntity(NeedPlan.class))
-                .block(); 
+                .block();
 
         System.out.println("Response Body: " + responseEntity.getBody());
 
@@ -125,16 +134,16 @@ public class NominationService {
         if (responseEntity != null && responseEntity.getBody() != null) {
             needPlanId = responseEntity.getBody().getId().toString();
         }
-        
+
         return needPlanId;
     }
 
 
-     private void createFulfillmentDetails(FulfillmentRequest request, String needId, 
+     private void createFulfillmentDetails(FulfillmentRequest request, String needId,
      String needPlanId,
      String assignedUserId,
      Map<String, String> headers) {
-       
+
         String apiNeedUrl = "/api/v1/serve-need/need/"+needId;
         // Get Need details
         NeedRequest needRequest = webClient.get()
@@ -142,7 +151,7 @@ public class NominationService {
             .headers(httpHeaders -> headers.forEach(httpHeaders::set))
             .retrieve()
             .bodyToMono(NeedRequest.class)
-            .block(); 
+            .block();
 
         request.setNeedId(needId);
         request.setNeedPlanId(needPlanId);
@@ -165,5 +174,169 @@ public class NominationService {
         return nominationRepository.findAllByNominatedUserId(nominatedUserId);
     }
 
-    // Add other service methods as needed
+    public void fetchNCoordinatorEmail(String needId,String nominatedUserId) {
+
+        try {
+            NeedResponse needResponse = fetchNeedResponse(needId);
+            String ncoordinatorUserId = needResponse.getUserId();
+            String description = needResponse.getDescription();
+
+            UserResponse userResponse = fetchUserResponse(ncoordinatorUserId);
+            UserResponse nominatedUserResponse = fetchUserResponse(nominatedUserId);
+            String nCoordinatorName = userResponse.getIdentityDetails().getFullname();
+            String ncoordinatorEmail = userResponse.getContactDetails().getEmail();
+            String nominatedUserName = nominatedUserResponse.getIdentityDetails().getFullname();
+
+            sendEmailToNCoordinator(nCoordinatorName, ncoordinatorEmail, description, nominatedUserName);
+        } catch (HttpStatusCodeException e) {
+            log.info("Error fetching email: {}", e.getMessage());
+        }
+
+        }
+
+    public void fetchNominatedUserEmail(String nominatedUserId) {
+
+        try {
+            UserResponse userResponse = fetchUserResponse(nominatedUserId);
+            String nominatedUserEmail = userResponse.getContactDetails().getEmail();
+            String nominatedUserName = userResponse.getIdentityDetails().getFullname();
+
+            sendEmailToNominatedUser(nominatedUserName,nominatedUserEmail);
+        } catch (HttpStatusCodeException e) {
+            log.info("Error fetching email: {}", e.getMessage());
+        }
+
+    }
+
+    private NeedResponse fetchNeedResponse(String needId) {
+        String serveNeedUrl = "https://serve-v1.evean.net/api/v1/serve-need/need/" + needId;
+        ResponseEntity<NeedResponse> responseEntity = restTemplate.getForEntity(serveNeedUrl, NeedResponse.class);
+
+        if (responseEntity.getStatusCode() != HttpStatus.OK) {
+            throw new HttpStatusCodeException(responseEntity.getStatusCode(), "Failed to fetch need response") {};
+        }
+        return responseEntity.getBody();
+    }
+
+    private UserResponse fetchUserResponse(String userId) {
+        String serveVolunteeringUserUrl = "https://serve-v1.evean.net/api/v1/serve-volunteering/user/" + userId;
+        ResponseEntity<UserResponse> responseEntity = restTemplate.getForEntity(serveVolunteeringUserUrl, UserResponse.class);
+
+        if (responseEntity.getStatusCode() != HttpStatus.OK) {
+            throw new HttpStatusCodeException(responseEntity.getStatusCode(), "Failed to fetch user response") {};
+        }
+        return responseEntity.getBody();
+    }
+
+    public void sendEmailToNCoordinator(String nCoordinatorName, String ncoordinatorEmail, String description, String nominatedUserName) {
+        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+        try {
+            MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, true, "utf-8");
+            mimeMessageHelper.setTo(ncoordinatorEmail);
+            mimeMessageHelper.setSubject("New Volunteer Need Nomination: Action Required");
+            mimeMessageHelper.setText("Dear " + nCoordinatorName + ",<br>" +
+                    "<br>" +
+                    "This is to bring to your attention a new volunteer need that has been nominated by one of our dedicated volunteers through the SERVE platform." +
+                    "<br>"+
+                    "Volunteer Name: " + nominatedUserName +
+                    "<br>" +
+                    "Nominated Need: " + description +
+                    "<br>" +
+                    "Please take a moment to review the nominated need and provide your feedback or decision. Your prompt attention to this matter is greatly appreciated." +
+                    "<br>" +
+                    "Thank you for your continued dedication to our mission and for your support in making SERVE a platform that truly makes a difference in people's lives." +
+                    "<br>" +
+                    "<br>" +
+                    "Warm Regards," +
+                    "<br>" +
+                    "Admin", true);
+            javaMailSender.send(mimeMessage);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void sendEmailToNominatedUser(String nominatedUserName, String nominatedUserEmail) {
+        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+        try {
+            MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, true, "utf-8");
+            mimeMessageHelper.setTo(nominatedUserEmail);
+            mimeMessageHelper.setSubject("Your Volunteer Need Nomination - Thank You!");
+            mimeMessageHelper.setText("Dear " + nominatedUserName + ",<br>" +
+                    "<br>" +
+                    "We hope this message finds you well and filled with the same enthusiasm that you bring to our volunteer community every day." +
+                    "<br>" +
+                    "We wanted to take a moment to express our sincere gratitude for your recent nomination of a volunteer need through SERVE." +
+                    "<br>" +
+                    "Your nomination is a vital contribution to our efforts to better serve our community and address its needs effectively. We're eager to review your nomination." +
+                    "<br>" +
+                    "Thank you once again for your commitment and passion for serving others. We look forward to exploring your nomination further and keeping you updated on its progress." +
+                    "<br>" +
+                    "<br>" +
+                    "Warm regards," +
+                    "<br>" +
+                    "Admin", true);
+            javaMailSender.send(mimeMessage);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void sendEmailToVolunteer(String nominatedUserId, NominationStatus status, String needId) throws MessagingException {
+        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+        UserResponse userResponse = fetchUserResponse(nominatedUserId);
+        String nominatedUserEmail = userResponse.getContactDetails().getEmail();
+        String nominatedUserName = userResponse.getIdentityDetails().getFullname();
+
+        MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, true, "utf-8");
+        mimeMessageHelper. setTo(nominatedUserEmail);
+        try {
+            if(status == NominationStatus.Approved) {
+                mimeMessageHelper.setSubject("Confirmation: Your Volunteer Need Nomination");
+                mimeMessageHelper.setText("Dear " + nominatedUserName + ",<br>" +
+                        "<br>" +
+                        "I hope this message finds you in good spirits." +
+                        "<br>" +
+                        "I'm delighted to share that your volunteer need nomination on the SERVE platform has been carefully reviewed and approved by our administrative team." +
+                        "<br>" +
+                        "Volunteer Need: [Brief Description of the Need]" +
+                        "<br>" +
+                        "Your commitment to empowering rural children's education is deeply appreciated and highly valued." +
+                        "<br>" +
+                        "Please log in to the platform to access the Need Plan, where you'll find detailed information about the sessions and schedule"+
+                        "<br>" +
+                        "Wishing you all the best as you embark on these classes."+
+                        "<br>"+
+                        "<br>"+
+                        "Warm regards," +
+                        "<br>" +
+                        "Admin", true);
+                javaMailSender.send(mimeMessage);
+            }
+            else if(status == NominationStatus.Rejected) {
+                mimeMessageHelper.setSubject("Update on Your Volunteer Need Nomination");
+                mimeMessageHelper.setText("Dear " + nominatedUserName + ",<br>" +
+                        "<br>" +
+                        "I hope this email finds you well." +
+                        "<br>" +
+                        "I wanted to provide you with an update regarding your recent volunteer need nomination on the SERVE platform. After careful consideration, our administrative team has reviewed your suggestion, and unfortunately, we have decided not to proceed with the nomination at this time." +
+                        "<br>" +
+                        "While we deeply appreciate your initiative and dedication to making a positive impact, upon evaluation, we found that the nominated need may not align perfectly with our current timelines and required skill sets." +
+                        "<br>" +
+                        "Please understand that your commitment to serving others is immensely valued, and we encourage you to continue exploring opportunities that better match your availability and skills." +
+                        "<br>" +
+                        "If you have any questions or would like further clarification on our decision, please don't hesitate to reach out. We're here to support you in any way we can." +
+                        "<br>" +
+                        "Thank you for your understanding and ongoing support of our mission." +
+                        "<br>" +
+                        "<br>" +
+                        "Warm regards," +
+                        "<br>" +
+                        "Admin", true);
+                javaMailSender.send(mimeMessage);
+            }
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
+    }
 }

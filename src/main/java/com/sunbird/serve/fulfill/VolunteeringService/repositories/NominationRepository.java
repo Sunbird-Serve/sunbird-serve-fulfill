@@ -1,4 +1,4 @@
-package com.sunbird.serve.fulfill;
+package com.sunbird.serve.fulfill.VolunteeringService.repositories;
 
 import com.sunbird.serve.fulfill.models.Nomination.Nomination;
 import com.sunbird.serve.fulfill.models.enums.NominationStatus;
