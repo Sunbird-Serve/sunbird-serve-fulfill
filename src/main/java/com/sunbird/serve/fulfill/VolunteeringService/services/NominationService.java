@@ -35,6 +35,11 @@ import reactor.core.publisher.Mono;
 import java.util.UUID;
 import java.util.Map;
 
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.AsyncResult;
+import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
+
 
 @Service
 @Slf4j
@@ -187,7 +192,7 @@ public class NominationService {
             String ncoordinatorEmail = userResponse.getContactDetails().getEmail();
             String nominatedUserName = nominatedUserResponse.getIdentityDetails().getFullname();
 
-            sendEmailToNCoordinator(nCoordinatorName, ncoordinatorEmail, description, nominatedUserName);
+            sendEmailToNCoordinatorAsync(nCoordinatorName, ncoordinatorEmail, description, nominatedUserName);
         } catch (HttpStatusCodeException e) {
             log.info("Error fetching email: {}", e.getMessage());
         }
@@ -201,7 +206,7 @@ public class NominationService {
             String nominatedUserEmail = userResponse.getContactDetails().getEmail();
             String nominatedUserName = userResponse.getIdentityDetails().getFullname();
 
-            sendEmailToNominatedUser(nominatedUserName,nominatedUserEmail);
+            sendEmailToNominatedUserAsync(nominatedUserName,nominatedUserEmail);
         } catch (HttpStatusCodeException e) {
             log.info("Error fetching email: {}", e.getMessage());
         }
@@ -226,6 +231,16 @@ public class NominationService {
             throw new HttpStatusCodeException(responseEntity.getStatusCode(), "Failed to fetch user response") {};
         }
         return responseEntity.getBody();
+    }
+
+    @Async
+    public CompletableFuture<Void> sendEmailToNCoordinatorAsync(String nCoordinatorName, String ncoordinatorEmail, String description, String nominatedUserName){
+        try {
+            sendEmailToNCoordinator(nCoordinatorName, ncoordinatorEmail, description, nominatedUserName);
+        } catch (HttpStatusCodeException e) {
+            e.printStackTrace();
+        }
+        return CompletableFuture.completedFuture(null);
     }
 
     public void sendEmailToNCoordinator(String nCoordinatorName, String ncoordinatorEmail, String description, String nominatedUserName) {
@@ -256,6 +271,16 @@ public class NominationService {
         }
     }
 
+    @Async
+    public CompletableFuture<Void> sendEmailToNominatedUserAsync(String nominatedUserName, String nominatedUserEmail) {
+        try {
+            sendEmailToNominatedUser(nominatedUserName, nominatedUserEmail);
+        } catch (HttpStatusCodeException e) {
+            e.printStackTrace();
+        }
+        return CompletableFuture.completedFuture(null);
+    }
+
     public void sendEmailToNominatedUser(String nominatedUserName, String nominatedUserEmail) {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         try {
@@ -280,6 +305,17 @@ public class NominationService {
         } catch (MessagingException e) {
             e.printStackTrace();
         }
+    }
+
+
+    @Async
+    public CompletableFuture<Void> sendEmailToVolunteerAsync(String nominatedUserId, NominationStatus status, String needId) {
+        try {
+            sendEmailToVolunteer(nominatedUserId, status, needId);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
+        return CompletableFuture.completedFuture(null);
     }
 
     public void sendEmailToVolunteer(String nominatedUserId, NominationStatus status, String needId) throws MessagingException {

@@ -90,7 +90,7 @@ public class NominationController {
             @RequestHeader Map<String, String> headers) throws MessagingException {
 
         Nomination nominations = nominationService.updateNomination(nominatedUserId,nominationId,status, headers);
-        nominationService.sendEmailToVolunteer(nominatedUserId, status, nominations.getNeedId());
+        nominationService.sendEmailToVolunteerAsync(nominatedUserId, status, nominations.getNeedId());
 
         return ResponseEntity.ok(nominations);
     }
