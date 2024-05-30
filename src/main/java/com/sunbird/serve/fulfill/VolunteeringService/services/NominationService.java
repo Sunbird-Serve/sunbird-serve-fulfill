@@ -179,7 +179,7 @@ public class NominationService {
         return nominationRepository.findAllByNominatedUserId(nominatedUserId);
     }
 
-    public void fetchNCoordinatorEmail(String needId,String nominatedUserId) {
+    /*public void fetchNCoordinatorEmail(String needId,String nominatedUserId) {
 
         try {
             NeedResponse needResponse = fetchNeedResponse(needId);
@@ -188,6 +188,7 @@ public class NominationService {
 
             UserResponse userResponse = fetchUserResponse(ncoordinatorUserId);
             UserResponse nominatedUserResponse = fetchUserResponse(nominatedUserId);
+            
             String nCoordinatorName = userResponse.getIdentityDetails().getFullname();
             String ncoordinatorEmail = userResponse.getContactDetails().getEmail();
             String nominatedUserName = nominatedUserResponse.getIdentityDetails().getFullname();
@@ -197,9 +198,35 @@ public class NominationService {
             log.info("Error fetching email: {}", e.getMessage());
         }
 
-        }
+        }*/
 
-    public void fetchNominatedUserEmail(String nominatedUserId) {
+    public void fetchNCoordinatorEmail(String needId, String nominatedUserId) {
+    CompletableFuture<NeedResponse> needResponseFuture = fetchNeedResponseAsync(needId);
+    CompletableFuture<UserResponse> nCoordinatorResponseFuture = needResponseFuture.thenCompose(needResponse ->
+            fetchUserResponseAsync(needResponse.getUserId()));
+    CompletableFuture<UserResponse> nominatedUserResponseFuture = fetchUserResponseAsync(nominatedUserId);
+
+    CompletableFuture.allOf(needResponseFuture, nCoordinatorResponseFuture, nominatedUserResponseFuture)
+            .thenRun(() -> {
+                try {
+                    NeedResponse needResponse = needResponseFuture.get();
+                    UserResponse nCoordinatorResponse = nCoordinatorResponseFuture.get();
+                    UserResponse nominatedUserResponse = nominatedUserResponseFuture.get();
+
+                    sendEmailToNCoordinatorAsync(
+                            nCoordinatorResponse.getIdentityDetails().getFullname(),
+                            nCoordinatorResponse.getContactDetails().getEmail(),
+                            needResponse.getDescription(),
+                            nominatedUserResponse.getIdentityDetails().getFullname()
+                    );
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+}
+
+
+    /*public void fetchNominatedUserEmail(String nominatedUserId) {
 
         try {
             UserResponse userResponse = fetchUserResponse(nominatedUserId);
@@ -211,6 +238,23 @@ public class NominationService {
             log.info("Error fetching email: {}", e.getMessage());
         }
 
+    }*/
+
+    public void fetchNominatedUserEmail(String nominatedUserId) {
+    fetchUserResponseAsync(nominatedUserId).thenAccept(userResponse -> {
+        sendEmailToNominatedUserAsync(
+                userResponse.getIdentityDetails().getFullname(),
+                userResponse.getContactDetails().getEmail()
+        );
+    });
+}
+
+    public CompletableFuture<NeedResponse> fetchNeedResponseAsync(String needId) {
+        return CompletableFuture.supplyAsync(() -> fetchNeedResponse(needId));
+    }
+
+    public CompletableFuture<UserResponse> fetchUserResponseAsync(String userId) {
+        return CompletableFuture.supplyAsync(() -> fetchUserResponse(userId));
     }
 
     private NeedResponse fetchNeedResponse(String needId) {
