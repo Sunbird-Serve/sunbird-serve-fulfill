@@ -237,11 +237,11 @@ public class NominationService {
             mimeMessageHelper.setText("Dear " + nCoordinatorName + ",<br>" +
                     "<br>" +
                     "This is to bring to your attention a new volunteer need that has been nominated by one of our dedicated volunteers through the SERVE platform." +
-                    "<br>"+
+                    "<br><br>"+
                     "Volunteer Name: " + nominatedUserName +
-                    "<br>" +
+                    "<br><br>" +
                     "Nominated Need: " + description +
-                    "<br>" +
+                    "<br><br>" +
                     "Please take a moment to review the nominated need and provide your feedback or decision. Your prompt attention to this matter is greatly appreciated." +
                     "<br>" +
                     "Thank you for your continued dedication to our mission and for your support in making SERVE a platform that truly makes a difference in people's lives." +
@@ -267,9 +267,9 @@ public class NominationService {
                     "We hope this message finds you well and filled with the same enthusiasm that you bring to our volunteer community every day." +
                     "<br>" +
                     "We wanted to take a moment to express our sincere gratitude for your recent nomination of a volunteer need through SERVE." +
-                    "<br>" +
+                    "<br><br>" +
                     "Your nomination is a vital contribution to our efforts to better serve our community and address its needs effectively. We're eager to review your nomination." +
-                    "<br>" +
+                    "<br><br>" +
                     "Thank you once again for your commitment and passion for serving others. We look forward to exploring your nomination further and keeping you updated on its progress." +
                     "<br>" +
                     "<br>" +
@@ -288,6 +288,9 @@ public class NominationService {
         String nominatedUserEmail = userResponse.getContactDetails().getEmail();
         String nominatedUserName = userResponse.getIdentityDetails().getFullname();
 
+        NeedResponse needResponse = fetchNeedResponse(needId);
+            String description = needResponse.getDescription();
+
         MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, true, "utf-8");
         mimeMessageHelper. setTo(nominatedUserEmail);
         try {
@@ -298,13 +301,13 @@ public class NominationService {
                         "I hope this message finds you in good spirits." +
                         "<br>" +
                         "I'm delighted to share that your volunteer need nomination on the SERVE platform has been carefully reviewed and approved by our administrative team." +
-                        "<br>" +
-                        "Volunteer Need: [Brief Description of the Need]" +
-                        "<br>" +
+                        "<br><br>" +
+                        "Volunteer Need:" + description +
+                        "<br><br>" +
                         "Your commitment to empowering rural children's education is deeply appreciated and highly valued." +
                         "<br>" +
                         "Please log in to the platform to access the Need Plan, where you'll find detailed information about the sessions and schedule"+
-                        "<br>" +
+                        "<br><br>" +
                         "Wishing you all the best as you embark on these classes."+
                         "<br>"+
                         "<br>"+
