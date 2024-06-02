@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import com.sunbird.serve.fulfill.models.Nomination.Nomination;
+import com.sunbird.serve.fulfill.models.Need.Need;
 import com.sunbird.serve.fulfill.models.enums.NominationStatus;
 import com.sunbird.serve.fulfill.models.enums.FulfillmentStatus;
 import com.sunbird.serve.fulfill.models.enums.NeedStatus;
@@ -85,6 +86,15 @@ public class NominationService {
         //Need need = needRepository.findById(UUID.fromString(nomination.getNeedId())).get();
 
         nomination.setNominationStatus(status);
+
+        String apiNeedUrl = "/api/v1/serve-need/need/status"+nomination.getNeedId()+"?status=Assigned";
+
+        ResponseEntity<Need> responseEntity = webClient.put()
+                .uri(apiNeedUrl)
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .headers(httpHeaders -> headers.forEach(httpHeaders::set))
+                .exchangeToMono(response -> response.toEntity(Need.class))
+                .block();
 
         // Call the createNeedPlan API
         String needPlanId = callCreateNeedPlanApi(needPlanRequest,nomination.getNeedId(), headers);
