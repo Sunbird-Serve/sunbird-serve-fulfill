@@ -87,8 +87,8 @@ public class NominationService {
 
         nomination.setNominationStatus(status);
 
-        String apiNeedUrl = "/api/v1/serve-need/need/status"+nomination.getNeedId()+"?status=Assigned";
-
+        //String apiNeedUrl = "/api/v1/serve-need/need/status"+nomination.getNeedId()+"?status=Assigned";
+        String apiNeedUrl = String.format("/api/v1/serve-need/need/status/%s?status=Assigned", nomination.getNeedId());
         ResponseEntity<Need> responseEntity = webClient.put()
                 .uri(apiNeedUrl)
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
