@@ -42,6 +42,8 @@ import org.springframework.scheduling.annotation.AsyncResult;
 import java.util.concurrent.Future;
 import java.util.concurrent.CompletableFuture;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 @Slf4j
@@ -58,6 +60,8 @@ public class NominationService {
 
     @Autowired
     private JavaMailSender javaMailSender;
+
+    private static final Logger logger = LoggerFactory.getLogger(NominationService.class);
 
     @Autowired
     public NominationService(NominationRepository nominationRepository,
@@ -95,9 +99,34 @@ public class NominationService {
         //Need need = needRepository.findById(UUID.fromString(nomination.getNeedId())).get();
 
         nomination.setNominationStatus(status);
+        List<Nomination> nominationList = getAllNominations(nomination.getNeedId(), headers);
+        String needStatus = "";
 
-        //String apiNeedUrl = "/api/v1/serve-need/need/status"+nomination.getNeedId()+"?status=Assigned";
-        String apiNeedUrl = String.format("/api/v1/serve-need/need/status/%s?status=Assigned", nomination.getNeedId());
+        if (status.equals(NominationStatus.Approved)) {
+        for (Nomination n : nominationList) {
+            if (!n.getId().equals(nomination.getId())) {
+                n.setNominationStatus(NominationStatus.Rejected);
+                nominationRepository.save(n);
+            }
+        }
+        needStatus = "Assigned";
+    } else if (status.equals(NominationStatus.Rejected)) {
+        // Check if any other nomination is approved
+        boolean anyApproved = nominationList.stream()
+                .anyMatch(n -> n.getNominationStatus().equals(NominationStatus.Approved));
+        boolean anyNominated = nominationList.stream()
+                .anyMatch(n -> n.getNominationStatus().equals(NominationStatus.Nominated));
+        
+        if (anyApproved) {
+            needStatus = "Assigned";
+        } else if (anyNominated) {
+            needStatus = "Nominated";
+        } else {
+            needStatus = "Approved";
+        }
+    }
+
+        String apiNeedUrl = String.format("/api/v1/serve-need/need/status/%s?status=%s", nomination.getNeedId(),needStatus);
         ResponseEntity<Need> responseEntity = webClient.put()
                 .uri(apiNeedUrl)
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
