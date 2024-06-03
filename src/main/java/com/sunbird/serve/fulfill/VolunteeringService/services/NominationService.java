@@ -35,6 +35,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 import java.util.Map;
+import java.util.HashMap;
 
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
@@ -75,7 +76,15 @@ public class NominationService {
     public Nomination nominateNeed(NominationRequest nominationRequest) {
         // Convert NominationRequest to Nomination entity
         Nomination nomination = NominationMapper.mapToEntity(nominationRequest);
-
+        Map<String, String> headers = new HashMap<>(); 
+        String status = nominationRequest.getStatus().toString();
+        String apiNeedUrl = String.format("/api/v1/serve-need/need/status/%s?status=%s", nomination.getNeedId(), status);
+        ResponseEntity<Need> responseEntity = webClient.put()
+                .uri(apiNeedUrl)
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .headers(httpHeaders -> headers.forEach(httpHeaders::set))
+                .exchangeToMono(response -> response.toEntity(Need.class))
+                .block();
         // Save the entity
         return nominationRepository.save(nomination);
     }
