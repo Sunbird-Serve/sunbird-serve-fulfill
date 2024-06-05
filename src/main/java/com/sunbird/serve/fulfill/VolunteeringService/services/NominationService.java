@@ -17,6 +17,7 @@ import com.sunbird.serve.fulfill.models.enums.NeedStatus;
 import com.sunbird.serve.fulfill.models.request.NominationRequest;
 import com.sunbird.serve.fulfill.models.request.NeedPlanRequest;
 import com.sunbird.serve.fulfill.models.request.NeedRequest;
+import com.sunbird.serve.fulfill.models.request.UserStatusRequest;
 import com.sunbird.serve.fulfill.models.Need.NeedPlan;
 import com.sunbird.serve.fulfill.models.request.FulfillmentRequest;
 import com.sunbird.serve.fulfill.models.request.NeedRequirementRequest;
@@ -32,6 +33,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.http.MediaType;
 import org.springframework.http.HttpHeaders;
 import reactor.core.publisher.Mono;
+import org.springframework.web.reactive.function.BodyInserters;
 
 import java.util.UUID;
 import java.util.Map;
@@ -97,7 +99,7 @@ public class NominationService {
     public Nomination updateNomination(String userId, String nominationId, NominationStatus status, Map<String, String> headers) {
         Nomination nomination = nominationRepository.findById(UUID.fromString(nominationId)).get();
         //Need need = needRepository.findById(UUID.fromString(nomination.getNeedId())).get();
-
+        UserStatusRequest userStatusRequest = new UserStatusRequest();
         nomination.setNominationStatus(status);
         List<Nomination> nominationList = getAllNominations(nomination.getNeedId(), headers);
         String needStatus = "";
@@ -110,6 +112,17 @@ public class NominationService {
             }
         }
         needStatus = "Assigned";
+        userStatusRequest.setUserStatus("Active");
+        userStatusRequest.setSend(true);
+        String apiUserUrl = String.format("/api/v1/serve-volunteering/user/status/update/%s", userId);
+        webClient.put()
+            .uri(apiUserUrl)
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .headers(httpHeaders -> headers.forEach(httpHeaders::set))
+            .body(BodyInserters.fromValue(userStatusRequest))
+            .retrieve()
+            .bodyToMono(Void.class)
+            .block();
     } else if (status.equals(NominationStatus.Rejected)) {
         // Check if any other nomination is approved
         boolean anyApproved = nominationList.stream()
