@@ -13,6 +13,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UserStatusRequest {
 
-   private String userStatus;
+   private String status;
    private Boolean send;
 }

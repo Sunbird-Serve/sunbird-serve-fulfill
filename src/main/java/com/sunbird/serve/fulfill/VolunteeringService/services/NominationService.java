@@ -112,7 +112,7 @@ public class NominationService {
             }
         }
         needStatus = "Assigned";
-        userStatusRequest.setUserStatus("Active");
+        userStatusRequest.setStatus("Active");
         userStatusRequest.setSend(true);
         String apiUserUrl = String.format("/api/v1/serve-volunteering/user/status/update/%s", userId);
         webClient.put()
