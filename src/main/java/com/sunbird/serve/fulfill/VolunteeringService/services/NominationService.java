@@ -105,12 +105,12 @@ public class NominationService {
         String needStatus = "";
 
         if (status.equals(NominationStatus.Approved)) {
-        /*for (Nomination n : nominationList) {
+        for (Nomination n : nominationList) {
             if (!n.getId().equals(nomination.getId())) {
                 n.setNominationStatus(NominationStatus.Rejected);
                 nominationRepository.save(n);
             }
-        }*/
+        }
         needStatus = "Assigned";
         userStatusRequest.setStatus("Active");
         userStatusRequest.setSend(true);
