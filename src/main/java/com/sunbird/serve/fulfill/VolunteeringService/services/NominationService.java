@@ -21,6 +21,7 @@ import com.sunbird.serve.fulfill.models.request.UserStatusRequest;
 import com.sunbird.serve.fulfill.models.Need.NeedPlan;
 import com.sunbird.serve.fulfill.models.request.FulfillmentRequest;
 import com.sunbird.serve.fulfill.models.request.NeedRequirementRequest;
+import org.springframework.beans.factory.annotation.Value;
 import java.util.List;
 
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
@@ -56,7 +57,7 @@ public class NominationService {
     private final NeedPlanRequest needPlanRequest;
     private final FulfillmentRequest fulfillmentRequest;
     private final FulfillmentService fulfillmentService;
-
+    private final String serveUrl;
     private final RestTemplate restTemplate;
 
 
@@ -69,13 +70,15 @@ public class NominationService {
     public NominationService(NominationRepository nominationRepository,
                              WebClient.Builder webClientBuilder, NeedPlanRequest needPlanRequest,
                              FulfillmentRequest fulfillmentRequest,
-                             FulfillmentService fulfillmentService, RestTemplate restTemplate) {
+                             FulfillmentService fulfillmentService, RestTemplate restTemplate, 
+                             @Value("${serve.url}") String serveUrl) {
         this.nominationRepository = nominationRepository;
-        this.webClient = webClientBuilder.baseUrl("https://serve-v1.evean.net").build();
+        this.webClient = webClientBuilder.baseUrl(serveUrl).build();
         this.needPlanRequest = needPlanRequest;
         this.fulfillmentRequest = fulfillmentRequest;
         this.fulfillmentService = fulfillmentService;
         this.restTemplate = restTemplate;
+        this.serveUrl = serveUrl;
         this.restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
     }
 
@@ -319,7 +322,7 @@ public class NominationService {
     }
 
     private NeedResponse fetchNeedResponse(String needId) {
-        String serveNeedUrl = "https://serve-v1.evean.net/api/v1/serve-need/need/" + needId;
+        String serveNeedUrl = serveUrl + "/api/v1/serve-need/need/" + needId;
         ResponseEntity<NeedResponse> responseEntity = restTemplate.getForEntity(serveNeedUrl, NeedResponse.class);
 
         if (responseEntity.getStatusCode() != HttpStatus.OK) {
@@ -329,7 +332,7 @@ public class NominationService {
     }
 
     private UserResponse fetchUserResponse(String userId) {
-        String serveVolunteeringUserUrl = "https://serve-v1.evean.net/api/v1/serve-volunteering/user/" + userId;
+        String serveVolunteeringUserUrl = serveUrl + "/api/v1/serve-volunteering/user/" + userId;
         ResponseEntity<UserResponse> responseEntity = restTemplate.getForEntity(serveVolunteeringUserUrl, UserResponse.class);
 
         if (responseEntity.getStatusCode() != HttpStatus.OK) {

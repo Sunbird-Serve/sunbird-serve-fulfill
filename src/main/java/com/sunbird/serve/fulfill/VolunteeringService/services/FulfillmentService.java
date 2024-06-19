@@ -14,7 +14,7 @@ import com.sunbird.serve.fulfill.models.request.NeedPlanRequest;
 import com.sunbird.serve.fulfill.models.request.NeedRequest;
 import com.sunbird.serve.fulfill.models.request.NeedRequirementRequest;
 import java.util.List;
-
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -43,9 +43,10 @@ public class FulfillmentService {
 
     @Autowired
     public FulfillmentService(FulfillmentRepository fulfillmentRepository, 
-    WebClient.Builder webClientBuilder, FulfillmentRequest fulfillmentRequest) {
+    WebClient.Builder webClientBuilder, FulfillmentRequest fulfillmentRequest, 
+    @Value("${serve.url}") String serveUrl) {
         this.fulfillmentRepository = fulfillmentRepository;
-        this.webClient = webClientBuilder.baseUrl("https://serve-v1.evean.net").build();
+        this.webClient = webClientBuilder.baseUrl(serveUrl).build();
         this.fulfillmentRequest = fulfillmentRequest;
     }
 
