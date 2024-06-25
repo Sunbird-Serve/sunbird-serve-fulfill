@@ -58,6 +58,8 @@ public class NominationService {
     private final FulfillmentRequest fulfillmentRequest;
     private final FulfillmentService fulfillmentService;
     private final String serveUrl;
+    private final String serveNeedUrl;
+    private final String serveVolunteeringUserUrl;
     private final RestTemplate restTemplate;
 
 
@@ -71,7 +73,9 @@ public class NominationService {
                              WebClient.Builder webClientBuilder, NeedPlanRequest needPlanRequest,
                              FulfillmentRequest fulfillmentRequest,
                              FulfillmentService fulfillmentService, RestTemplate restTemplate, 
-                             @Value("${serve.url}") String serveUrl) {
+                             @Value("${serve.url}") String serveUrl,
+                             @Value("${serve.need.url}") String serveNeedUrl,
+                             @Value("${serve.volunteering.url}") String serveVolunteeringUserUrl) {
         this.nominationRepository = nominationRepository;
         this.webClient = webClientBuilder.baseUrl(serveUrl).build();
         this.needPlanRequest = needPlanRequest;
@@ -79,6 +83,8 @@ public class NominationService {
         this.fulfillmentService = fulfillmentService;
         this.restTemplate = restTemplate;
         this.serveUrl = serveUrl;
+        this.serveNeedUrl = serveNeedUrl;
+        this.serveVolunteeringUserUrl = serveVolunteeringUserUrl;
         this.restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
     }
 
@@ -87,7 +93,7 @@ public class NominationService {
         Nomination nomination = NominationMapper.mapToEntity(nominationRequest);
         Map<String, String> headers = new HashMap<>(); 
         String status = nominationRequest.getStatus().toString();
-        String apiNeedUrl = String.format("/api/v1/serve-need/need/status/%s?status=%s", nomination.getNeedId(), status);
+        String apiNeedUrl = String.format("%s/api/v1/serve-need/need/status/%s?status=%s", serveNeedUrl, nomination.getNeedId(), status);
         ResponseEntity<Need> responseEntity = webClient.put()
                 .uri(apiNeedUrl)
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
@@ -117,7 +123,7 @@ public class NominationService {
         needStatus = "Assigned";
         userStatusRequest.setStatus("Active");
         userStatusRequest.setSend(true);
-        String apiUserUrl = String.format("/api/v1/serve-volunteering/user/status/update/%s", userId);
+        String apiUserUrl = String.format("%s/api/v1/serve-volunteering/user/status/update/%s",serveVolunteeringUserUrl, userId);
         webClient.put()
             .uri(apiUserUrl)
             .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
@@ -142,7 +148,7 @@ public class NominationService {
         }
     }
 
-        String apiNeedUrl = String.format("/api/v1/serve-need/need/status/%s?status=%s", nomination.getNeedId(),needStatus);
+        String apiNeedUrl = String.format("%s/api/v1/serve-need/need/status/%s?status=%s", serveNeedUrl, nomination.getNeedId(),needStatus);
         ResponseEntity<Need> responseEntity = webClient.put()
                 .uri(apiNeedUrl)
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
@@ -161,9 +167,9 @@ public class NominationService {
 
     private String callCreateNeedPlanApi(NeedPlanRequest request, String needId,
     Map<String, String> headers) {
-        String apiNeedUrl = "/api/v1/serve-need/need/"+needId;
-        String apiUrl = "/api/v1/serve-need/need-plan/create";
-        String apiNeedReqUrl = "/api/v1/serve-need/need-requirement/";
+        String apiNeedUrl = serveNeedUrl+"/api/v1/serve-need/need/"+needId;
+        String apiUrl = serveNeedUrl+"/api/v1/serve-need/need-plan/create";
+        String apiNeedReqUrl = serveNeedUrl+"/api/v1/serve-need/need-requirement/";
 
         // Get Need details
         NeedRequest needRequest = webClient.get()
@@ -213,7 +219,7 @@ public class NominationService {
      String assignedUserId,
      Map<String, String> headers) {
 
-        String apiNeedUrl = "/api/v1/serve-need/need/"+needId;
+        String apiNeedUrl = serveNeedUrl+"/api/v1/serve-need/need/"+needId;
         // Get Need details
         NeedRequest needRequest = webClient.get()
             .uri(apiNeedUrl, needId)
@@ -322,8 +328,8 @@ public class NominationService {
     }
 
     private NeedResponse fetchNeedResponse(String needId) {
-        String serveNeedUrl = serveUrl + "/api/v1/serve-need/need/" + needId;
-        ResponseEntity<NeedResponse> responseEntity = restTemplate.getForEntity(serveNeedUrl, NeedResponse.class);
+        String serveNeedApi = serveNeedUrl+"/api/v1/serve-need/need/" + needId;
+        ResponseEntity<NeedResponse> responseEntity = restTemplate.getForEntity(serveNeedApi, NeedResponse.class);
 
         if (responseEntity.getStatusCode() != HttpStatus.OK) {
             throw new HttpStatusCodeException(responseEntity.getStatusCode(), "Failed to fetch need response") {};
@@ -332,8 +338,8 @@ public class NominationService {
     }
 
     private UserResponse fetchUserResponse(String userId) {
-        String serveVolunteeringUserUrl = serveUrl + "/api/v1/serve-volunteering/user/" + userId;
-        ResponseEntity<UserResponse> responseEntity = restTemplate.getForEntity(serveVolunteeringUserUrl, UserResponse.class);
+        String serveVolunteeringApi = serveVolunteeringUserUrl+"/api/v1/serve-volunteering/user/" + userId;
+        ResponseEntity<UserResponse> responseEntity = restTemplate.getForEntity(serveVolunteeringApi, UserResponse.class);
 
         if (responseEntity.getStatusCode() != HttpStatus.OK) {
             throw new HttpStatusCodeException(responseEntity.getStatusCode(), "Failed to fetch user response") {};
