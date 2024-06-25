@@ -83,7 +83,7 @@ public class NominationController {
             @ApiResponse(responseCode = "400", description = "Bad Input"),
             @ApiResponse(responseCode = "500", description = "Server Error")}
     )
-    @PostMapping("/nomination/{needId}/nominate/{nominatedUserId}/confirm/{nominationId}")
+    @PostMapping("/nomination/nominate/{nominatedUserId}/confirm/{nominationId}")
     public ResponseEntity<Nomination> updateNomination( @PathVariable String nominatedUserId,
             @PathVariable String nominationId,
             @RequestParam(required = true) NominationStatus status,
