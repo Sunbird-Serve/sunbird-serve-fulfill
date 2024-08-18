@@ -97,4 +97,46 @@ public class FulfillmentController {
         List<Fulfillment> fulfillment = fulfillmentService.getFulfillmentForCoordUser(coordUserId, page, size, headers);
         return ResponseEntity.ok(fulfillment);
     }
+
+    //Fetch Fulfillment for a need
+    @Operation(summary = "Fulfilment Details For  a Need", description = "Fetch Fulfillment Details for a need")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully Fetched Fulfillment Details", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
+            @ApiResponse(responseCode = "400", description = "Bad Input"),
+            @ApiResponse(responseCode = "500", description = "Server Error")}
+    )
+    @GetMapping("/fulfillment/fulfill-read/{needId}")
+    public ResponseEntity<Fulfillment> getFulfillmentForNeed(
+            @PathVariable String needId,
+            @RequestHeader Map<String, String> headers) {
+        Fulfillment fulfillment = fulfillmentService.getFulfillmentForNeed(needId, headers);
+        return ResponseEntity.ok(fulfillment);
+    }
+
+    @PostMapping("/fulfillment/sendEmail")
+public ResponseEntity<String> sendEmail(@RequestBody Map<String, Object> requestBody) {
+    try {
+        // Extract the scenario type, needId, and deliverableDetails from the request body
+        String scenarioType = (String) requestBody.get("scenarioType");
+        String needId = (String) requestBody.get("needId");
+        Map<String, Object> deliverableDetails = (Map<String, Object>) requestBody.get("deliverableDetails");
+        
+
+        // Determine the action based on the scenarioType
+        switch (scenarioType) {
+            case "CancelSession":
+                fulfillmentService.sendSessionCancelEmailAsync(needId, deliverableDetails);
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid scenario type: " + scenarioType);
+        }
+
+        // Return a success response
+        return ResponseEntity.ok("Operation for scenario " + scenarioType + " completed successfully.");
+    } catch (Exception e) {
+        // Handle exceptions and return an error response
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error processing scenario: " + e.getMessage());
+    }
+}
 }

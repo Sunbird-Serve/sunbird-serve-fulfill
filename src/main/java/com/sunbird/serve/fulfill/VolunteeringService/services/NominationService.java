@@ -66,6 +66,10 @@ public class NominationService {
     @Autowired
     private JavaMailSender javaMailSender;
 
+    @Autowired
+    private EmailTemplateService emailTemplateService;
+
+
     private static final Logger logger = LoggerFactory.getLogger(NominationService.class);
 
     @Autowired
@@ -249,27 +253,6 @@ public class NominationService {
         return nominationRepository.findAllByNominatedUserId(nominatedUserId);
     }
 
-    /*public void fetchNCoordinatorEmail(String needId,String nominatedUserId) {
-
-        try {
-            NeedResponse needResponse = fetchNeedResponse(needId);
-            String ncoordinatorUserId = needResponse.getUserId();
-            String description = needResponse.getDescription();
-
-            UserResponse userResponse = fetchUserResponse(ncoordinatorUserId);
-            UserResponse nominatedUserResponse = fetchUserResponse(nominatedUserId);
-            
-            String nCoordinatorName = userResponse.getIdentityDetails().getFullname();
-            String ncoordinatorEmail = userResponse.getContactDetails().getEmail();
-            String nominatedUserName = nominatedUserResponse.getIdentityDetails().getFullname();
-
-            sendEmailToNCoordinatorAsync(nCoordinatorName, ncoordinatorEmail, description, nominatedUserName);
-        } catch (HttpStatusCodeException e) {
-            log.info("Error fetching email: {}", e.getMessage());
-        }
-
-        }*/
-
     public void fetchNCoordinatorEmail(String needId, String nominatedUserId) {
     CompletableFuture<NeedResponse> needResponseFuture = fetchNeedResponseAsync(needId);
     CompletableFuture<UserResponse> nCoordinatorResponseFuture = needResponseFuture.thenCompose(needResponse ->
@@ -294,21 +277,6 @@ public class NominationService {
                 }
             });
 }
-
-
-    /*public void fetchNominatedUserEmail(String nominatedUserId) {
-
-        try {
-            UserResponse userResponse = fetchUserResponse(nominatedUserId);
-            String nominatedUserEmail = userResponse.getContactDetails().getEmail();
-            String nominatedUserName = userResponse.getIdentityDetails().getFullname();
-
-            sendEmailToNominatedUserAsync(nominatedUserName,nominatedUserEmail);
-        } catch (HttpStatusCodeException e) {
-            log.info("Error fetching email: {}", e.getMessage());
-        }
-
-    }*/
 
     public void fetchNominatedUserEmail(String nominatedUserId) {
     fetchUserResponseAsync(nominatedUserId).thenAccept(userResponse -> {
@@ -351,7 +319,7 @@ public class NominationService {
     public CompletableFuture<Void> sendEmailToNCoordinatorAsync(String nCoordinatorName, String ncoordinatorEmail, String description, String nominatedUserName){
         try {
             sendEmailToNCoordinator(nCoordinatorName, ncoordinatorEmail, description, nominatedUserName);
-        } catch (HttpStatusCodeException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return CompletableFuture.completedFuture(null);
@@ -361,35 +329,23 @@ public class NominationService {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         try {
             MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, true, "utf-8");
+            String subject = emailTemplateService.getNCoordinatorEmailSubject();
+            String body = emailTemplateService.getNCoordinatorEmailBody(nCoordinatorName, nominatedUserName, description);
             mimeMessageHelper.setTo(ncoordinatorEmail);
-            mimeMessageHelper.setSubject("New Volunteer Need Nomination: Action Required");
-            mimeMessageHelper.setText("Dear " + nCoordinatorName + ",<br>" +
-                    "<br>" +
-                    "This is to bring to your attention a new volunteer need that has been nominated by one of our dedicated volunteers through the SERVE platform." +
-                    "<br><br>"+
-                    "Volunteer Name: " + nominatedUserName +
-                    "<br><br>" +
-                    "Nominated Need: " + description +
-                    "<br><br>" +
-                    "Please take a moment to review the nominated need and provide your feedback or decision. Your prompt attention to this matter is greatly appreciated." +
-                    "<br>" +
-                    "Thank you for your continued dedication to our mission and for your support in making SERVE a platform that truly makes a difference in people's lives." +
-                    "<br>" +
-                    "<br>" +
-                    "Warm Regards," +
-                    "<br>" +
-                    "Admin", true);
+            mimeMessageHelper.setSubject(subject);
+            mimeMessageHelper.setText(body, true);
             javaMailSender.send(mimeMessage);
         } catch (MessagingException e) {
             e.printStackTrace();
         }
     }
 
+
     @Async
     public CompletableFuture<Void> sendEmailToNominatedUserAsync(String nominatedUserName, String nominatedUserEmail) {
         try {
             sendEmailToNominatedUser(nominatedUserName, nominatedUserEmail);
-        } catch (HttpStatusCodeException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return CompletableFuture.completedFuture(null);
@@ -399,22 +355,11 @@ public class NominationService {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         try {
             MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, true, "utf-8");
+            String subject = emailTemplateService.getNominatedUserEmailSubject();
+            String body = emailTemplateService.getNominatedUserEmailBody(nominatedUserName);
             mimeMessageHelper.setTo(nominatedUserEmail);
-            mimeMessageHelper.setSubject("Your Volunteer Need Nomination - Thank You!");
-            mimeMessageHelper.setText("Dear " + nominatedUserName + ",<br>" +
-                    "<br>" +
-                    "We hope this message finds you well and filled with the same enthusiasm that you bring to our volunteer community every day." +
-                    "<br>" +
-                    "We wanted to take a moment to express our sincere gratitude for your recent nomination of a volunteer need through SERVE." +
-                    "<br><br>" +
-                    "Your nomination is a vital contribution to our efforts to better serve our community and address its needs effectively. We're eager to review your nomination." +
-                    "<br><br>" +
-                    "Thank you once again for your commitment and passion for serving others. We look forward to exploring your nomination further and keeping you updated on its progress." +
-                    "<br>" +
-                    "<br>" +
-                    "Warm regards," +
-                    "<br>" +
-                    "Admin", true);
+            mimeMessageHelper.setSubject(subject);
+            mimeMessageHelper.setText(body, true);
             javaMailSender.send(mimeMessage);
         } catch (MessagingException e) {
             e.printStackTrace();
@@ -422,74 +367,36 @@ public class NominationService {
     }
 
 
+
     @Async
     public CompletableFuture<Void> sendEmailToVolunteerAsync(String nominatedUserId, NominationStatus status, String needId) {
         try {
             sendEmailToVolunteer(nominatedUserId, status, needId);
-        } catch (MessagingException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return CompletableFuture.completedFuture(null);
     }
 
-    public void sendEmailToVolunteer(String nominatedUserId, NominationStatus status, String needId) throws MessagingException {
-        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
-        UserResponse userResponse = fetchUserResponse(nominatedUserId);
-        String nominatedUserEmail = userResponse.getContactDetails().getEmail();
-        String nominatedUserName = userResponse.getIdentityDetails().getFullname();
-
-        NeedResponse needResponse = fetchNeedResponse(needId);
-            String description = needResponse.getDescription();
-
-        MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, true, "utf-8");
-        mimeMessageHelper. setTo(nominatedUserEmail);
+    public void sendEmailToVolunteer(String nominatedUserId, NominationStatus status, String needId) {
         try {
-            if(status == NominationStatus.Approved) {
-                mimeMessageHelper.setSubject("Confirmation: Your Volunteer Need Nomination");
-                mimeMessageHelper.setText("Dear " + nominatedUserName + ",<br>" +
-                        "<br>" +
-                        "I hope this message finds you in good spirits." +
-                        "<br>" +
-                        "I'm delighted to share that your volunteer need nomination on the SERVE platform has been carefully reviewed and approved by our administrative team." +
-                        "<br><br>" +
-                        "Volunteer Need:" + description +
-                        "<br><br>" +
-                        "Your commitment to empowering rural children's education is deeply appreciated and highly valued." +
-                        "<br>" +
-                        "Please log in to the platform to access the Need Plan, where you'll find detailed information about the sessions and schedule"+
-                        "<br><br>" +
-                        "Wishing you all the best as you embark on these classes."+
-                        "<br>"+
-                        "<br>"+
-                        "Warm regards," +
-                        "<br>" +
-                        "Admin", true);
-                javaMailSender.send(mimeMessage);
-            }
-            else if(status == NominationStatus.Rejected) {
-                mimeMessageHelper.setSubject("Update on Your Volunteer Need Nomination");
-                mimeMessageHelper.setText("Dear " + nominatedUserName + ",<br>" +
-                        "<br>" +
-                        "I hope this email finds you well." +
-                        "<br>" +
-                        "I wanted to provide you with an update regarding your recent volunteer need nomination on the SERVE platform. After careful consideration, our administrative team has reviewed your suggestion, and unfortunately, we have decided not to proceed with the nomination at this time." +
-                        "<br>" +
-                        "While we deeply appreciate your initiative and dedication to making a positive impact, upon evaluation, we found that the nominated need may not align perfectly with our current timelines and required skill sets." +
-                        "<br>" +
-                        "Please understand that your commitment to serving others is immensely valued, and we encourage you to continue exploring opportunities that better match your availability and skills." +
-                        "<br>" +
-                        "If you have any questions or would like further clarification on our decision, please don't hesitate to reach out. We're here to support you in any way we can." +
-                        "<br>" +
-                        "Thank you for your understanding and ongoing support of our mission." +
-                        "<br>" +
-                        "<br>" +
-                        "Warm regards," +
-                        "<br>" +
-                        "Admin", true);
-                javaMailSender.send(mimeMessage);
-            }
+            MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+            UserResponse userResponse = fetchUserResponse(nominatedUserId);
+            String nominatedUserEmail = userResponse.getContactDetails().getEmail();
+            String nominatedUserName = userResponse.getIdentityDetails().getFullname();
+            NeedResponse needResponse = fetchNeedResponse(needId);
+            String description = needResponse.getDescription();
+            MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, true, "utf-8");
+            String subject = emailTemplateService.getVolunteerEmailSubject(status);
+            String body = emailTemplateService.getVolunteerEmailBody(nominatedUserName, status, description);
+
+            mimeMessageHelper.setTo(nominatedUserEmail);
+            mimeMessageHelper.setSubject(subject);
+            mimeMessageHelper.setText(body, true);
+            javaMailSender.send(mimeMessage);
         } catch (MessagingException e) {
             e.printStackTrace();
         }
     }
+
 }

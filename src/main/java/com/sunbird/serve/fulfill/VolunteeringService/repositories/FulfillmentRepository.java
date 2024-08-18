@@ -13,4 +13,6 @@ public interface FulfillmentRepository extends JpaRepository<Fulfillment, UUID> 
     List<Fulfillment> findAllByAssignedUserId(String assignedUserId);
 
     List<Fulfillment> findAllByCoordUserId(String coordUserId);
+
+    Fulfillment findAllByNeedId(String needId);
 }
