@@ -62,13 +62,11 @@ public class NominationService {
     private final String serveVolunteeringUserUrl;
     private final RestTemplate restTemplate;
 
-
     @Autowired
     private JavaMailSender javaMailSender;
 
     @Autowired
     private EmailTemplateService emailTemplateService;
-
 
     private static final Logger logger = LoggerFactory.getLogger(NominationService.class);
 
@@ -93,31 +91,36 @@ public class NominationService {
     }
 
     public Nomination nominateNeed(NominationRequest nominationRequest) {
-        // Convert NominationRequest to Nomination entity
-        Nomination nomination = NominationMapper.mapToEntity(nominationRequest);
-        Map<String, String> headers = new HashMap<>(); 
-        String status = nominationRequest.getStatus().toString();
-        String apiNeedUrl = String.format("%s/api/v1/serve-need/need/status/%s?status=%s", serveNeedUrl, nomination.getNeedId(), status);
-        ResponseEntity<Need> responseEntity = webClient.put()
-                .uri(apiNeedUrl)
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .headers(httpHeaders -> headers.forEach(httpHeaders::set))
-                .exchangeToMono(response -> response.toEntity(Need.class))
-                .block();
-        // Save the entity
-        return nominationRepository.save(nomination);
+        try {
+            // Convert NominationRequest to Nomination entity
+            Nomination nomination = NominationMapper.mapToEntity(nominationRequest);
+            Map<String, String> headers = new HashMap<>(); 
+            String status = nominationRequest.getStatus().toString();
+            String apiNeedUrl = String.format("%s/api/v1/serve-need/need/status/%s?status=%s", serveNeedUrl, nomination.getNeedId(), status);
+            ResponseEntity<Need> responseEntity = webClient.put()
+                    .uri(apiNeedUrl)
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .headers(httpHeaders -> headers.forEach(httpHeaders::set))
+                    .exchangeToMono(response -> response.toEntity(Need.class))
+                    .block();
+            // Save the entity
+            return nominationRepository.save(nomination);
+        } catch (Exception e) {
+            logger.error("Failed to nominate need: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to nominate need", e);
+        }
     }
 
-    //update nomination as confirm or reject
+    // Update nomination as confirm or reject
     public Nomination updateNomination(String userId, String nominationId, NominationStatus status, Map<String, String> headers) {
         Nomination nomination = nominationRepository.findById(UUID.fromString(nominationId)).get();
         //Need need = needRepository.findById(UUID.fromString(nomination.getNeedId())).get();
         UserStatusRequest userStatusRequest = new UserStatusRequest();
-        nomination.setNominationStatus(status);
-        List<Nomination> nominationList = getAllNominations(nomination.getNeedId(), headers);
+            nomination.setNominationStatus(status);
+            List<Nomination> nominationList = getAllNominations(nomination.getNeedId(), headers);
         String needStatus = "";
 
-        if (status.equals(NominationStatus.Approved)) {
+            if (status.equals(NominationStatus.Approved)) {
         /*for (Nomination n : nominationList) {
             if (!n.getId().equals(nomination.getId())) {
                 n.setNominationStatus(NominationStatus.Rejected);
@@ -142,7 +145,7 @@ public class NominationService {
                 .anyMatch(n -> n.getNominationStatus().equals(NominationStatus.Approved));
         boolean anyNominated = nominationList.stream()
                 .anyMatch(n -> n.getNominationStatus().equals(NominationStatus.Nominated));
-        
+
         if (anyApproved) {
             needStatus = "Assigned";
         } else if (anyNominated) {
@@ -154,11 +157,11 @@ public class NominationService {
 
         String apiNeedUrl = String.format("%s/api/v1/serve-need/need/status/%s?status=%s", serveNeedUrl, nomination.getNeedId(),needStatus);
         ResponseEntity<Need> responseEntity = webClient.put()
-                .uri(apiNeedUrl)
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .headers(httpHeaders -> headers.forEach(httpHeaders::set))
-                .exchangeToMono(response -> response.toEntity(Need.class))
-                .block();
+                    .uri(apiNeedUrl)
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .headers(httpHeaders -> headers.forEach(httpHeaders::set))
+                    .exchangeToMono(response -> response.toEntity(Need.class))
+                    .block();
 
         // Call the createNeedPlan API
         String needPlanId = callCreateNeedPlanApi(needPlanRequest,nomination.getNeedId(), headers);
@@ -171,50 +174,53 @@ public class NominationService {
 
     private String callCreateNeedPlanApi(NeedPlanRequest request, String needId,
     Map<String, String> headers) {
-        String apiNeedUrl = serveNeedUrl+"/api/v1/serve-need/need/"+needId;
-        String apiUrl = serveNeedUrl+"/api/v1/serve-need/need-plan/create";
-        String apiNeedReqUrl = serveNeedUrl+"/api/v1/serve-need/need-requirement/";
+        try{
+            String apiNeedUrl = serveNeedUrl+"/api/v1/serve-need/need/"+needId;
+            String apiUrl = serveNeedUrl+"/api/v1/serve-need/need-plan/create";
+            String apiNeedReqUrl = serveNeedUrl+"/api/v1/serve-need/need-requirement/";
 
-        // Get Need details
-        NeedRequest needRequest = webClient.get()
-            .uri(apiNeedUrl, needId)
-            .headers(httpHeaders -> headers.forEach(httpHeaders::set))
-            .retrieve()
-            .bodyToMono(NeedRequest.class)
-            .block();
+            // Get Need details
+            NeedRequest needRequest = webClient.get()
+                    .uri(apiNeedUrl, needId)
+                    .headers(httpHeaders -> headers.forEach(httpHeaders::set))
+                    .retrieve()
+                    .bodyToMono(NeedRequest.class)
+                    .block();
 
-        apiNeedReqUrl = apiNeedReqUrl+needRequest.getRequirementId();
-        // Get Need Requirement details
-        NeedRequirementRequest needRequirementRequest = webClient.get()
-            .uri(apiNeedReqUrl, needRequest.getRequirementId())
-            .headers(httpHeaders -> headers.forEach(httpHeaders::set))
-            .retrieve()
-            .bodyToMono(NeedRequirementRequest.class)
-            .block();
+            apiNeedReqUrl = apiNeedReqUrl+needRequest.getRequirementId();
+            // Get Need Requirement details
+            NeedRequirementRequest needRequirementRequest = webClient.get()
+                    .uri(apiNeedReqUrl, needRequest.getRequirementId())
+                    .headers(httpHeaders -> headers.forEach(httpHeaders::set))
+                    .retrieve()
+                    .bodyToMono(NeedRequirementRequest.class)
+                    .block();
 
 
-        request.setNeedId(needId);
-        request.setName(needRequest.getName());
-        request.setStatus(NeedStatus.Approved);
-        request.setOccurrenceId(needRequirementRequest.getOccurrenceId());
+            request.setNeedId(needId);
+            request.setName(needRequest.getName());
+            request.setStatus(NeedStatus.Approved);
+            request.setOccurrenceId(needRequirementRequest.getOccurrenceId());
 
-        ResponseEntity<NeedPlan> responseEntity = webClient.post()
-                .uri(apiUrl)
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .headers(httpHeaders -> headers.forEach(httpHeaders::set))
-                .body(Mono.just(request), NeedPlanRequest.class)
-                .exchangeToMono(response -> response.toEntity(NeedPlan.class))
-                .block();
+            ResponseEntity<NeedPlan> responseEntity = webClient.post()
+                    .uri(apiUrl)
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .headers(httpHeaders -> headers.forEach(httpHeaders::set))
+                    .body(Mono.just(request), NeedPlanRequest.class)
+                    .exchangeToMono(response -> response.toEntity(NeedPlan.class))
+                    .block();
 
-        System.out.println("Response Body: " + responseEntity.getBody());
+            // Extract the newly created Need Plan ID from the response
+            String needPlanId = null;
+            if (responseEntity != null && responseEntity.getBody() != null) {
+                needPlanId = responseEntity.getBody().getId().toString();
+            }
 
-        // Extract the newly created Need Plan ID from the response
-        String needPlanId = null;
-        if (responseEntity != null && responseEntity.getBody() != null) {
-            needPlanId = responseEntity.getBody().getId().toString();
+            return needPlanId;
+        }catch (Exception e) {
+            logger.error("Failed to get need plan created from fulfill ms: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to create need plan from fulfill ms", e);
         }
-
-        return needPlanId;
     }
 
 
@@ -222,23 +228,27 @@ public class NominationService {
      String needPlanId,
      String assignedUserId,
      Map<String, String> headers) {
+        try{
+            String apiNeedUrl = serveNeedUrl+"/api/v1/serve-need/need/"+needId;
+            // Get Need details
+            NeedRequest needRequest = webClient.get()
+                    .uri(apiNeedUrl, needId)
+                    .headers(httpHeaders -> headers.forEach(httpHeaders::set))
+                    .retrieve()
+                    .bodyToMono(NeedRequest.class)
+                    .block();
 
-        String apiNeedUrl = serveNeedUrl+"/api/v1/serve-need/need/"+needId;
-        // Get Need details
-        NeedRequest needRequest = webClient.get()
-            .uri(apiNeedUrl, needId)
-            .headers(httpHeaders -> headers.forEach(httpHeaders::set))
-            .retrieve()
-            .bodyToMono(NeedRequest.class)
-            .block();
-
-        request.setNeedId(needId);
-        request.setNeedPlanId(needPlanId);
-        request.setAssignedUserId(assignedUserId);
-        request.setCoordUserId(needRequest.getUserId());
-        request.setFulfillmentStatus(FulfillmentStatus.InProgress);
-        fulfillmentService.createFulfillment(request);
-    }
+            request.setNeedId(needId);
+            request.setNeedPlanId(needPlanId);
+            request.setAssignedUserId(assignedUserId);
+            request.setCoordUserId(needRequest.getUserId());
+            request.setFulfillmentStatus(FulfillmentStatus.InProgress);
+            fulfillmentService.createFulfillment(request);
+        }catch (Exception e) {
+            logger.error("Failed to create fulfillment: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to create fulfillment", e);
+        }
+     }
 
     public List<Nomination> getAllNominations(String needId, Map<String, String> headers) {
         return nominationRepository.findAllByNeedId(needId);
