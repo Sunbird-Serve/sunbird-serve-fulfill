@@ -5,18 +5,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.stereotype.Component;
 
 
 @Builder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Component
-public class NeedPlanRequest {
-   private String fulfillmentId;
-   private String needId;
-   private String name;
-   private NeedStatus status;
-   private String occurrenceId;
+public class UserStatusRequest {
+
+   private String status;
+   private Boolean send;
 }

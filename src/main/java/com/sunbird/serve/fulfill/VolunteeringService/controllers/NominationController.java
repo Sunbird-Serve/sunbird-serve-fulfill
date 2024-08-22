@@ -1,5 +1,7 @@
-package com.sunbird.serve.fulfill;
+package com.sunbird.serve.fulfill.VolunteeringService.controllers;
 
+import com.sunbird.serve.fulfill.VolunteeringService.services.NominationService;
+import jakarta.mail.MessagingException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -48,7 +50,7 @@ public class NominationController {
     }
 
     //Nominate a need
-    @Operation(summary = "User Nominate a Need", description = "Nominate a Need")
+    @Operation(summary = "UserResponse Nominate a Need", description = "Nominate a Need")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully Nominated a Need", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
             @ApiResponse(responseCode = "400", description = "Bad Input"),
@@ -65,8 +67,13 @@ public class NominationController {
         request.setComments("");
         request.setStatus(NominationStatus.Nominated);
         Nomination response = nominationService.nominateNeed(request);
+
+        nominationService.fetchNCoordinatorEmail(needId,nominatedUserId);
+        nominationService.fetchNominatedUserEmail(nominatedUserId);
+
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
 
 
     //Confirm or reject the nomination
@@ -76,13 +83,15 @@ public class NominationController {
             @ApiResponse(responseCode = "400", description = "Bad Input"),
             @ApiResponse(responseCode = "500", description = "Server Error")}
     )
-    @PostMapping("/nomination/{needId}/nominate/{nominatedUserId}/confirm/{nominationId}")
+    @PostMapping("/nomination/nominate/{nominatedUserId}/confirm/{nominationId}")
     public ResponseEntity<Nomination> updateNomination( @PathVariable String nominatedUserId,
             @PathVariable String nominationId,
             @RequestParam(required = true) NominationStatus status,
-            @RequestHeader Map<String, String> headers) {
+            @RequestHeader Map<String, String> headers) throws MessagingException {
 
         Nomination nominations = nominationService.updateNomination(nominatedUserId,nominationId,status, headers);
+        nominationService.sendEmailToVolunteerAsync(nominatedUserId, status, nominations.getNeedId());
+
         return ResponseEntity.ok(nominations);
     }
 

@@ -7,5 +7,6 @@ public enum NeedStatus {
     Nominated,
     InProgress,
     Closed,
-    Inactive
+    Inactive, 
+    Assigned
 }
