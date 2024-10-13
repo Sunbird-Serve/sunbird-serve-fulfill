@@ -22,7 +22,8 @@ import com.sunbird.serve.fulfill.models.Need.NeedPlan;
 import com.sunbird.serve.fulfill.models.request.FulfillmentRequest;
 import com.sunbird.serve.fulfill.models.request.NeedRequirementRequest;
 import org.springframework.beans.factory.annotation.Value;
-import java.util.List;
+
+import java.util.*;
 
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -35,10 +36,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.HttpHeaders;
 import reactor.core.publisher.Mono;
 import org.springframework.web.reactive.function.BodyInserters;
-
-import java.util.UUID;
-import java.util.Map;
-import java.util.HashMap;
 
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
@@ -407,6 +404,70 @@ public class NominationService {
         } catch (MessagingException e) {
             e.printStackTrace();
         }
+    }
+
+
+    public List<UserResponse> getRecommendedVolunteersNotNominated(Map<String, String> headers) {
+        UserResponse[] allVolunteers = webClient.get()
+                .uri("/api/v1/serve-volunteering/user/status?status=Recommended")
+                .headers(httpHeaders -> headers.forEach(httpHeaders::set))
+                .retrieve()
+                .bodyToMono(UserResponse[].class)
+                .block();
+
+        if (allVolunteers == null) {
+            log.warn("API returned null response body");
+            return new ArrayList<>();
+        }
+
+        List<UserResponse> notNominatedVolunteers = new ArrayList<>();
+
+        for (UserResponse user : allVolunteers) {
+            if (user.getRole() != null && user.getRole().contains("Volunteer")) {
+                List<Nomination> nominations = nominationRepository.findAllByNominatedUserId(user.getOsid());
+                if (nominations == null || nominations.isEmpty()) {
+                    notNominatedVolunteers.add(user);
+                }
+            }
+        }
+
+        if (notNominatedVolunteers.isEmpty()) {
+            log.info("All users from the API are already nominated.");
+        }
+
+        return notNominatedVolunteers;
+    }
+
+
+    public List<UserResponse> getRecommendedVolunteersNominated(Map<String, String> headers) {
+        UserResponse[] allVolunteers = webClient.get()
+                .uri("/api/v1/serve-volunteering/user/status?status=Recommended")
+                .headers(httpHeaders -> headers.forEach(httpHeaders::set))
+                .retrieve()
+                .bodyToMono(UserResponse[].class)
+                .block();
+
+        if (allVolunteers == null) {
+            log.warn("API returned null response body");
+            return new ArrayList<>();
+        }
+
+        List<UserResponse> nominatedVolunteers = new ArrayList<>();
+
+        for (UserResponse user : allVolunteers) {
+            if (user.getRole() != null && user.getRole().contains("Volunteer")) {
+                List<Nomination> nominations = nominationRepository.findAllByNominatedUserId(user.getOsid());
+                if (nominations != null && !nominations.isEmpty()) {
+                    nominatedVolunteers.add(user);
+                }
+            }
+        }
+
+        if (nominatedVolunteers.isEmpty()) {
+            log.info("No recommended volunteers are present in the nomination table.");
+        }
+
+        return nominatedVolunteers;
     }
 
 }
