@@ -1,6 +1,7 @@
 package com.sunbird.serve.fulfill.VolunteeringService.controllers;
 
 import com.sunbird.serve.fulfill.VolunteeringService.services.NominationService;
+import com.sunbird.serve.fulfill.models.userresponse.UserResponse;
 import jakarta.mail.MessagingException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -119,5 +120,17 @@ public class NominationController {
         List<Nomination> nominations = nominationService.getAllNominationForUser(nominatedUserId, page, size, headers);
         return ResponseEntity.ok(nominations);
     }
-    // Add other controller methods as needed
+
+
+    @GetMapping("/volunteer/recommendedNotNominated")
+    public ResponseEntity<List<UserResponse>> getRecommendedVolunteersNotNominated(@RequestHeader Map<String, String> headers) {
+        List<UserResponse> volunteers = nominationService.getRecommendedVolunteersNotNominated(headers);
+        return ResponseEntity.ok(volunteers);
+    }
+
+    @GetMapping("/volunteer/recommendedNominated")
+    public ResponseEntity<List<UserResponse>> getRecommendedVolunteersNominated(@RequestHeader Map<String, String> headers) {
+        List<UserResponse> volunteers = nominationService.getRecommendedVolunteersNominated(headers);
+        return ResponseEntity.ok(volunteers);
+    }
 }
