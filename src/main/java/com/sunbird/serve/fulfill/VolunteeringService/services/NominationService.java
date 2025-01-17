@@ -160,12 +160,13 @@ public class NominationService {
                     .exchangeToMono(response -> response.toEntity(Need.class))
                     .block();
 
-        // Call the createNeedPlan API
-        String needPlanId = callCreateNeedPlanApi(needPlanRequest,nomination.getNeedId(), headers);
+        if (status.equals(NominationStatus.Approved)){
+            // Call the createNeedPlan API
+            String needPlanId = callCreateNeedPlanApi(needPlanRequest,nomination.getNeedId(), headers);
 
-        // Create Fulfillment Details for this need
-        createFulfillmentDetails(fulfillmentRequest, nomination.getNeedId(), needPlanId, nomination.getNominatedUserId(), headers);
-
+            // Create Fulfillment Details for this need
+            createFulfillmentDetails(fulfillmentRequest, nomination.getNeedId(), needPlanId, nomination.getNominatedUserId(), headers);
+        }
         return nominationRepository.save(nomination);
     }
 
