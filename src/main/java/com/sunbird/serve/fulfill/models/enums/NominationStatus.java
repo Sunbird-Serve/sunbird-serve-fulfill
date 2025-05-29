@@ -4,5 +4,6 @@ public enum NominationStatus {
     Nominated,
     Approved,
     Proposed,
+    Backfill,
     Rejected
 }
