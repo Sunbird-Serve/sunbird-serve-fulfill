@@ -136,7 +136,7 @@ public class NominationService {
             .retrieve()
             .bodyToMono(Void.class)
             .block();
-    } else if (status.equals(NominationStatus.Rejected)) {
+    } else if (status.equals(NominationStatus.Rejected) || status.equals(NominationStatus.Backfill) ) {
         // Check if any other nomination is approved
         boolean anyApproved = nominationList.stream()
                 .anyMatch(n -> n.getNominationStatus().equals(NominationStatus.Approved));
