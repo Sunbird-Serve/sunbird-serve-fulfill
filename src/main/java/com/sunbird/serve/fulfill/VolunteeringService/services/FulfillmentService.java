@@ -56,6 +56,8 @@ import org.springframework.web.client.HttpStatusCodeException;
 @Service
 public class FulfillmentService {
 
+    private static final Logger logger = LoggerFactory.getLogger(FulfillmentService.class);
+
     private final FulfillmentRepository fulfillmentRepository;
     private final WebClient webClient;
     private final FulfillmentRequest fulfillmentRequest;
@@ -67,6 +69,12 @@ public class FulfillmentService {
     private EmailTemplateService emailTemplateService;
 
     private final RestTemplate restTemplate;
+
+    @Value("${serve.need.url}")
+    private String serveNeedUrl;
+
+    @Value("${serve.volunteering.url}")
+    private String serveVolunteeringUserUrl;
 
     @Autowired
     public FulfillmentService(FulfillmentRepository fulfillmentRepository, 
@@ -80,7 +88,7 @@ public class FulfillmentService {
     }
 
     private NeedResponse fetchNeedResponse(String needId) {
-        String serveNeedApi = "http://localhost:9000/api/v1/serve-need/need/" + needId;
+        String serveNeedApi = serveNeedUrl + "/api/v1/serve-need/need/" + needId;
         ResponseEntity<NeedResponse> responseEntity = restTemplate.getForEntity(serveNeedApi, NeedResponse.class);
 
         if (responseEntity.getStatusCode() != HttpStatus.OK) {
@@ -90,7 +98,7 @@ public class FulfillmentService {
     }
 
     private UserResponse fetchUserResponse(String userId) {
-        String serveVolunteeringApi = "http://localhost:9090/api/v1/serve-volunteering/user/" + userId;
+        String serveVolunteeringApi = serveVolunteeringUserUrl + "/api/v1/serve-volunteering/user/" + userId;
         ResponseEntity<UserResponse> responseEntity = restTemplate.getForEntity(serveVolunteeringApi, UserResponse.class);
 
         if (responseEntity.getStatusCode() != HttpStatus.OK) {
@@ -124,7 +132,7 @@ public class FulfillmentService {
         try {
             sendSessionCancelEmail(needId, deliverableDetails);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Failed to send session cancel email for needId: {}", needId, e);
         }
         return CompletableFuture.completedFuture(null);
     }
@@ -162,7 +170,7 @@ public class FulfillmentService {
             javaMailSender.send(mimeMessage);
 
         } catch (MessagingException e) {
-            e.printStackTrace();
+            logger.error("Failed to send session cancel email for needId: {}", needId, e);
         }
     }
 

@@ -328,14 +328,14 @@ public class NominationService {
         try {
             sendEmailToNCoordinator(nCoordinatorName, ncoordinatorEmail, description, nominatedUserName);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Failed to send email to coordinator: {}", ncoordinatorEmail, e);
         }
         return CompletableFuture.completedFuture(null);
     }
 
     public void sendEmailToNCoordinator(String nCoordinatorName, String ncoordinatorEmail, String description, String nominatedUserName) {
-        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         try {
+            MimeMessage mimeMessage = javaMailSender.createMimeMessage();
             MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, true, "utf-8");
             String subject = emailTemplateService.getNCoordinatorEmailSubject();
             String body = emailTemplateService.getNCoordinatorEmailBody(nCoordinatorName, nominatedUserName, description);
@@ -344,7 +344,7 @@ public class NominationService {
             mimeMessageHelper.setText(body, true);
             javaMailSender.send(mimeMessage);
         } catch (MessagingException e) {
-            e.printStackTrace();
+            logger.error("Failed to send email to coordinator: {}", ncoordinatorEmail, e);
         }
     }
 
@@ -354,14 +354,14 @@ public class NominationService {
         try {
             sendEmailToNominatedUser(nominatedUserName, nominatedUserEmail);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Failed to send email to nominated user: {}", nominatedUserEmail, e);
         }
         return CompletableFuture.completedFuture(null);
     }
 
     public void sendEmailToNominatedUser(String nominatedUserName, String nominatedUserEmail) {
-        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         try {
+            MimeMessage mimeMessage = javaMailSender.createMimeMessage();
             MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, true, "utf-8");
             String subject = emailTemplateService.getNominatedUserEmailSubject();
             String body = emailTemplateService.getNominatedUserEmailBody(nominatedUserName);
@@ -370,7 +370,7 @@ public class NominationService {
             mimeMessageHelper.setText(body, true);
             javaMailSender.send(mimeMessage);
         } catch (MessagingException e) {
-            e.printStackTrace();
+            logger.error("Failed to send email to nominated user: {}", nominatedUserEmail, e);
         }
     }
 
@@ -381,7 +381,7 @@ public class NominationService {
         try {
             sendEmailToVolunteer(nominatedUserId, status, needId);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Failed to send email to volunteer: {} for needId: {}", nominatedUserId, needId, e);
         }
         return CompletableFuture.completedFuture(null);
     }
@@ -403,7 +403,7 @@ public class NominationService {
             mimeMessageHelper.setText(body, true);
             javaMailSender.send(mimeMessage);
         } catch (MessagingException e) {
-            e.printStackTrace();
+            logger.error("Failed to send email to volunteer: {} for needId: {}", nominatedUserId, needId, e);
         }
     }
 
