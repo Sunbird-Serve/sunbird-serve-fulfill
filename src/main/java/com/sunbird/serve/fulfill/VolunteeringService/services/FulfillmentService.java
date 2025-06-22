@@ -2,6 +2,8 @@ package com.sunbird.serve.fulfill.VolunteeringService.services;
 
 import com.sunbird.serve.fulfill.FulfillmentRepository;
 import com.sunbird.serve.fulfill.NominationMapper;
+import com.sunbird.serve.fulfill.exception.ExternalServiceException;
+import com.sunbird.serve.fulfill.exception.ServiceException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -88,43 +90,115 @@ public class FulfillmentService {
     }
 
     private NeedResponse fetchNeedResponse(String needId) {
-        String serveNeedApi = serveNeedUrl + "/api/v1/serve-need/need/" + needId;
-        ResponseEntity<NeedResponse> responseEntity = restTemplate.getForEntity(serveNeedApi, NeedResponse.class);
+        try {
+            String serveNeedApi = serveNeedUrl + "/api/v1/serve-need/need/" + needId;
+            ResponseEntity<NeedResponse> responseEntity = restTemplate.getForEntity(serveNeedApi, NeedResponse.class);
 
-        if (responseEntity.getStatusCode() != HttpStatus.OK) {
-            throw new HttpStatusCodeException(responseEntity.getStatusCode(), "Failed to fetch need response") {};
+            if (responseEntity.getStatusCode() != HttpStatus.OK) {
+                throw new ExternalServiceException(
+                    "Failed to fetch need response", 
+                    "NEED_SERVICE_ERROR", 
+                    "serve-need", 
+                    HttpStatus.valueOf(responseEntity.getStatusCode().value()), 
+                    serveNeedApi
+                );
+            }
+            return responseEntity.getBody();
+        } catch (HttpClientErrorException e) {
+            throw new ExternalServiceException(
+                "Failed to fetch need response", 
+                "NEED_SERVICE_ERROR", 
+                "serve-need", 
+                HttpStatus.valueOf(e.getStatusCode().value()), 
+                serveNeedUrl + "/api/v1/serve-need/need/" + needId
+            );
+        } catch (HttpStatusCodeException e) {
+            throw new ExternalServiceException(
+                "Failed to fetch need response", 
+                "NEED_SERVICE_ERROR", 
+                "serve-need", 
+                HttpStatus.valueOf(e.getStatusCode().value()), 
+                serveNeedUrl + "/api/v1/serve-need/need/" + needId
+            );
+        } catch (Exception e) {
+            throw new ServiceException("Failed to fetch need response", "NEED_SERVICE_ERROR", "serve-need", e);
         }
-        return responseEntity.getBody();
     }
 
     private UserResponse fetchUserResponse(String userId) {
-        String serveVolunteeringApi = serveVolunteeringUserUrl + "/api/v1/serve-volunteering/user/" + userId;
-        ResponseEntity<UserResponse> responseEntity = restTemplate.getForEntity(serveVolunteeringApi, UserResponse.class);
+        try {
+            String serveVolunteeringApi = serveVolunteeringUserUrl + "/api/v1/serve-volunteering/user/" + userId;
+            ResponseEntity<UserResponse> responseEntity = restTemplate.getForEntity(serveVolunteeringApi, UserResponse.class);
 
-        if (responseEntity.getStatusCode() != HttpStatus.OK) {
-            throw new HttpStatusCodeException(responseEntity.getStatusCode(), "Failed to fetch user response") {};
+            if (responseEntity.getStatusCode() != HttpStatus.OK) {
+                throw new ExternalServiceException(
+                    "Failed to fetch user response", 
+                    "VOLUNTEERING_SERVICE_ERROR", 
+                    "serve-volunteering", 
+                    HttpStatus.valueOf(responseEntity.getStatusCode().value()), 
+                    serveVolunteeringApi
+                );
+            }
+            return responseEntity.getBody();
+        } catch (HttpClientErrorException e) {
+            throw new ExternalServiceException(
+                "Failed to fetch user response", 
+                "VOLUNTEERING_SERVICE_ERROR", 
+                "serve-volunteering", 
+                HttpStatus.valueOf(e.getStatusCode().value()), 
+                serveVolunteeringUserUrl + "/api/v1/serve-volunteering/user/" + userId
+            );
+        } catch (HttpStatusCodeException e) {
+            throw new ExternalServiceException(
+                "Failed to fetch user response", 
+                "VOLUNTEERING_SERVICE_ERROR", 
+                "serve-volunteering", 
+                HttpStatus.valueOf(e.getStatusCode().value()), 
+                serveVolunteeringUserUrl + "/api/v1/serve-volunteering/user/" + userId
+            );
+        } catch (Exception e) {
+            throw new ServiceException("Failed to fetch user response", "VOLUNTEERING_SERVICE_ERROR", "serve-volunteering", e);
         }
-        return responseEntity.getBody();
     }
 
     public Fulfillment createFulfillment(FulfillmentRequest fulfillmentRequest) {
-        // Convert fulfillmentRequest to Fulfillment entity
-        Fulfillment fulfillment = NominationMapper.mapToEntityFulfill(fulfillmentRequest);
+        try {
+            // Convert fulfillmentRequest to Fulfillment entity
+            Fulfillment fulfillment = NominationMapper.mapToEntityFulfill(fulfillmentRequest);
 
-        // Save the entity
-        return fulfillmentRepository.save(fulfillment);
+            // Save the entity
+            return fulfillmentRepository.save(fulfillment);
+        } catch (Exception e) {
+            logger.error("Failed to create fulfillment for needId: {}", fulfillmentRequest.getNeedId(), e);
+            throw new ServiceException("Failed to create fulfillment", "FULFILLMENT_CREATION_ERROR", "fulfillment-service", e);
+        }
     }
 
     public List<Fulfillment> getFulfillmentForAssignedUser(String assignedUserId, Integer page, Integer size, Map<String, String> headers) {
-        return fulfillmentRepository.findAllByAssignedUserId(assignedUserId);
+        try {
+            return fulfillmentRepository.findAllByAssignedUserId(assignedUserId);
+        } catch (Exception e) {
+            logger.error("Failed to get fulfillment for assigned user: {}", assignedUserId, e);
+            throw new ServiceException("Failed to get fulfillment for assigned user", "FULFILLMENT_RETRIEVAL_ERROR", "fulfillment-service", e);
+        }
     }
 
     public List<Fulfillment> getFulfillmentForCoordUser(String coordUserId, Integer page, Integer size, Map<String, String> headers) {
-        return fulfillmentRepository.findAllByCoordUserId(coordUserId);
+        try {
+            return fulfillmentRepository.findAllByCoordUserId(coordUserId);
+        } catch (Exception e) {
+            logger.error("Failed to get fulfillment for coordinator user: {}", coordUserId, e);
+            throw new ServiceException("Failed to get fulfillment for coordinator user", "FULFILLMENT_RETRIEVAL_ERROR", "fulfillment-service", e);
+        }
     }
 
     public Fulfillment getFulfillmentForNeed(String needId, Map<String, String> headers) {
-        return fulfillmentRepository.findAllByNeedId(needId);
+        try {
+            return fulfillmentRepository.findAllByNeedId(needId);
+        } catch (Exception e) {
+            logger.error("Failed to get fulfillment for need: {}", needId, e);
+            throw new ServiceException("Failed to get fulfillment for need", "FULFILLMENT_RETRIEVAL_ERROR", "fulfillment-service", e);
+        }
     }
 
     @Async
@@ -171,6 +245,10 @@ public class FulfillmentService {
 
         } catch (MessagingException e) {
             logger.error("Failed to send session cancel email for needId: {}", needId, e);
+            throw new ServiceException("Failed to send session cancel email", "EMAIL_SEND_ERROR", "fulfillment-service", e);
+        } catch (Exception e) {
+            logger.error("Failed to send session cancel email for needId: {}", needId, e);
+            throw new ServiceException("Failed to send session cancel email", "EMAIL_SEND_ERROR", "fulfillment-service", e);
         }
     }
 
