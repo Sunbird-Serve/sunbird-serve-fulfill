@@ -40,6 +40,7 @@ import java.util.Map;
 
 
 @RestController
+@CrossOrigin(origins = {"http://localhost:3000", "https://serve-v1.evean.net"}, allowCredentials = "true")
 public class NominationController {
 
     private final NominationService nominationService;

@@ -39,6 +39,7 @@ import java.util.Map;
 import jakarta.validation.Valid;
 
 @RestController
+@CrossOrigin(origins = {"http://localhost:3000", "https://serve-v1.evean.net"}, allowCredentials = "true")
 public class FulfillmentController {
 
     private final FulfillmentService fulfillmentService;
