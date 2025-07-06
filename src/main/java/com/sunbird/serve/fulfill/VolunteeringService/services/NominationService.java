@@ -424,9 +424,18 @@ public class NominationService {
             String nominatedUserName = userResponse.getIdentityDetails().getFullname();
             NeedResponse needResponse = fetchNeedResponse(needId);
             String description = needResponse.getDescription();
+            
+            // Fetch coordinator information
+            UserResponse coordinatorResponse = fetchUserResponse(needResponse.getUserId());
+            String coordUserName = coordinatorResponse.getIdentityDetails().getFullname();
+            String coordPhoneNumber = coordinatorResponse.getContactDetails().getMobile();
+            
+            // For entity name, we'll use the need name as a fallback since entity name might not be directly available
+            String entityName = needResponse.getName() != null ? needResponse.getName() : "N/A";
+            
             MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, true, "utf-8");
             String subject = emailTemplateService.getVolunteerEmailSubject(status);
-            String body = emailTemplateService.getVolunteerEmailBody(nominatedUserName, status, description);
+            String body = emailTemplateService.getVolunteerEmailBody(nominatedUserName, status, description, entityName, coordUserName, coordPhoneNumber);
 
             mimeMessageHelper.setTo(nominatedUserEmail);
             mimeMessageHelper.setSubject(subject);

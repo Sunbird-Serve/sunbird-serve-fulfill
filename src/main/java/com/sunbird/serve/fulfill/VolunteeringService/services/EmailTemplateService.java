@@ -26,39 +26,45 @@ public class EmailTemplateService {
     public String getNCoordinatorEmailBody(String nCoordinatorName, String nominatedUserName, String description) {
         return String.format(
             "Dear %s,<br><br>" +
-            "This is to bring to your attention a new volunteer need that has been nominated by one of our dedicated volunteers through the SERVE platform." +
+            "A volunteer has shown interest in taking up a new class (Need) through the SERVE platform." +
             "<br><br>" +
             "<strong>Volunteer Name:</strong> %s" +
             "<br>" +
             "<strong>Nominated Need:</strong> %s" +
             "<br><br>" +
-            "Please take a moment to review the nominated need and provide your feedback or decision. Your prompt attention to this matter is greatly appreciated." +
+            "Kindly follow these steps:" +
+            "<br>" +
+            "Please log in to the portal" +
+            "<br>" +
+            "Click on the Need" +
+            "<br>" +
+            "Kindly Approve or Reject the nomination." +
             "<br><br>" +
-            "Thank you for your continued dedication to our mission and for your support in making SERVE a platform that truly makes a difference in people's lives." +
+            "Thank you for your support." +
             "<br><br>" +
-            "Warm Regards,<br>" +
-            "Admin",
+            "Warm regards,<br>" +
+            "Admin<br>" +
+            "Sunbird SERVE",
             nCoordinatorName, nominatedUserName, description
         );
     }
 
     public String getNominatedUserEmailSubject() {
-        return "Your Volunteer Need Nomination - Thank You!";
+        return "Thank You for Your Nomination on SERVE";
     }
 
     public String getNominatedUserEmailBody(String nominatedUserName) {
         return String.format(
             "Dear %s,<br><br>" +
-            "We hope this message finds you well and filled with the same enthusiasm that you bring to our volunteer community every day." +
+            "Thank you for nominating a new class (Need) on the SERVE platform." +
             "<br><br>" +
-            "We wanted to take a moment to express our sincere gratitude for your recent nomination of a volunteer need through SERVE." +
+            "We truly appreciate your effort and your willingness to support children's learning. Your nomination helps us understand where support is needed, and we will review it soon." +
             "<br><br>" +
-            "Your nomination is a vital contribution to our efforts to better serve our community and address its needs effectively. We're eager to review your nomination." +
-            "<br><br>" +
-            "Thank you once again for your commitment and passion for serving others. We look forward to exploring your nomination further and keeping you updated on its progress." +
+            "We will keep you updated on the next steps." +
             "<br><br>" +
             "Warm regards,<br>" +
-            "Admin",
+            "Admin<br>" +
+            "Sunbird SERVE",
             nominatedUserName
         );
     }
@@ -96,40 +102,37 @@ public class EmailTemplateService {
         return "Update on Your Volunteer Need Nomination";
     }
 
-    public String getVolunteerEmailBody(String nominatedUserName, NominationStatus status, String description) {
+    public String getVolunteerEmailBody(String nominatedUserName, NominationStatus status, String description, String entityName, String coordUserName, String coordPhoneNumber) {
         if (status == NominationStatus.Approved) {
             return String.format(
                 "Dear %s,<br><br>" +
-                "I hope this message finds you in good spirits." +
-                "<br><br>" +
-                "I'm delighted to share that your volunteer need nomination on the SERVE platform has been carefully reviewed and approved by our administrative team." +
+                "We are delighted to share that your need nomination on the SERVE platform has been approved by the school teacher." +
                 "<br><br>" +
                 "<strong>Volunteer Need:</strong> %s" +
-                "<br><br>" +
-                "Your commitment to empowering rural children's education is deeply appreciated and highly valued." +
                 "<br>" +
-                "Please log in to the platform to access the Need Plan, where you'll find detailed information about the sessions and schedule." +
+                "<strong>School Name:</strong> %s" +
+                "<br>" +
+                "<strong>School Coordinator Name:</strong> %s" +
+                "<br>" +
+                "<strong>School Coordinator Phone:</strong> %s" +
                 "<br><br>" +
+                "Please log in to the platform to access your class schedule." +
+                "<br>" +
                 "Wishing you all the best as you embark on these classes." +
                 "<br><br>" +
                 "Warm regards,<br>" +
-                "Admin",
-                nominatedUserName, description
+                "Admin<br>" +
+                "Sunbird SERVE",
+                nominatedUserName, description, entityName, coordUserName, coordPhoneNumber
             );
         } else if (status == NominationStatus.Rejected) {
             return String.format(
                 "Dear %s,<br><br>" +
-                "I hope this email finds you well." +
+                "Thank you for nominating a class (Need) on the SERVE platform." +
                 "<br><br>" +
-                "I wanted to provide you with an update regarding your recent volunteer need nomination on the SERVE platform. After careful consideration, our administrative team has reviewed your suggestion, and unfortunately, we have decided not to proceed with the nomination at this time." +
+                "We wanted to let you know that this Need has already been assigned to another volunteer. Request you to nominate another Need that matches your interest and availability." +
                 "<br><br>" +
-                "While we deeply appreciate your initiative and dedication to making a positive impact, upon evaluation, we found that the nominated need may not align perfectly with our current timelines and required skill sets." +
-                "<br><br>" +
-                "Please understand that your commitment to serving others is immensely valued, and we encourage you to continue exploring opportunities that better match your availability and skills." +
-                "<br><br>" +
-                "If you have any questions or would like further clarification on our decision, please don't hesitate to reach out. We're here to support you in any way we can." +
-                "<br><br>" +
-                "Thank you for your understanding and ongoing support of our mission." +
+                "Thank you for your continued support!" +
                 "<br><br>" +
                 "Warm regards,<br>" +
                 "Admin",
