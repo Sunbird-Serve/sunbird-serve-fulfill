@@ -12,6 +12,7 @@ import com.sunbird.serve.fulfill.models.Nomination.Fulfillment;
 import com.sunbird.serve.fulfill.models.enums.FulfillmentStatus;
 import com.sunbird.serve.fulfill.models.enums.NeedStatus;
 import com.sunbird.serve.fulfill.models.request.FulfillmentRequest;
+import com.sunbird.serve.fulfill.models.request.FulfillmentUpdateRequest;
 import com.sunbird.serve.fulfill.models.request.NeedPlanRequest;
 import com.sunbird.serve.fulfill.models.request.NeedRequest;
 import com.sunbird.serve.fulfill.models.request.NeedRequirementRequest;
@@ -249,6 +250,45 @@ public class FulfillmentService {
         } catch (Exception e) {
             logger.error("Failed to send session cancel email for needId: {}", needId, e);
             throw new ServiceException("Failed to send session cancel email", "EMAIL_SEND_ERROR", "fulfillment-service", e);
+        }
+    }
+
+    public Fulfillment updateFulfillment(UUID fulfillmentId, FulfillmentUpdateRequest updateRequest) {
+        try {
+            // Find the existing fulfillment
+            Optional<Fulfillment> existingFulfillmentOpt = fulfillmentRepository.findById(fulfillmentId);
+            
+            if (!existingFulfillmentOpt.isPresent()) {
+                throw new ServiceException("Fulfillment not found", "FULFILLMENT_NOT_FOUND", "fulfillment-service", null);
+            }
+            
+            Fulfillment existingFulfillment = existingFulfillmentOpt.get();
+            
+            // Update only the provided fields
+            if (updateRequest.getNeedPlanId() != null && !updateRequest.getNeedPlanId().trim().isEmpty()) {
+                existingFulfillment.setNeedPlanId(updateRequest.getNeedPlanId());
+            }
+            
+            if (updateRequest.getAssignedUserId() != null && !updateRequest.getAssignedUserId().trim().isEmpty()) {
+                existingFulfillment.setAssignedUserId(updateRequest.getAssignedUserId());
+            }
+            
+            if (updateRequest.getCoordUserId() != null && !updateRequest.getCoordUserId().trim().isEmpty()) {
+                existingFulfillment.setCoordUserId(updateRequest.getCoordUserId());
+            }
+            
+            if (updateRequest.getFulfillmentStatus() != null) {
+                existingFulfillment.setFulfillmentStatus(updateRequest.getFulfillmentStatus());
+            }
+            
+            // Save the updated entity
+            return fulfillmentRepository.save(existingFulfillment);
+            
+        } catch (ServiceException e) {
+            throw e; // Re-throw service exceptions as-is
+        } catch (Exception e) {
+            logger.error("Failed to update fulfillment with ID: {}", fulfillmentId, e);
+            throw new ServiceException("Failed to update fulfillment", "FULFILLMENT_UPDATE_ERROR", "fulfillment-service", e);
         }
     }
 

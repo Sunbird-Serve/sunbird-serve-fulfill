@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.sunbird.serve.fulfill.models.Nomination.Fulfillment;
 import com.sunbird.serve.fulfill.models.enums.FulfillmentStatus;
 import com.sunbird.serve.fulfill.models.request.FulfillmentRequest;
+import com.sunbird.serve.fulfill.models.request.FulfillmentUpdateRequest;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -112,6 +113,24 @@ public class FulfillmentController {
             @RequestHeader Map<String, String> headers) {
         Fulfillment fulfillment = fulfillmentService.getFulfillmentForNeed(needId, headers);
         return ResponseEntity.ok(fulfillment);
+    }
+
+    //Update Fulfillment Details
+    @Operation(summary = "Update Fulfillment Details", description = "Update existing fulfillment details by fulfillment ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully Updated Fulfillment Details", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
+            @ApiResponse(responseCode = "400", description = "Bad Input"),
+            @ApiResponse(responseCode = "404", description = "Fulfillment not found"),
+            @ApiResponse(responseCode = "500", description = "Server Error")}
+    )
+    @PutMapping("/fulfillment/update/{fulfillmentId}")
+    public ResponseEntity<Fulfillment> updateFulfillment(
+            @PathVariable UUID fulfillmentId,
+            @Valid @RequestBody FulfillmentUpdateRequest updateRequest,
+            @RequestHeader Map<String, String> headers) {
+
+        Fulfillment updatedFulfillment = fulfillmentService.updateFulfillment(fulfillmentId, updateRequest);
+        return ResponseEntity.ok(updatedFulfillment);
     }
 
     @PostMapping("/fulfillment/sendEmail")
