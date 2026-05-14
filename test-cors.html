@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Test - Sunbird Serve Fulfill</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>CORS Test - Sunbird Serve Fulfill</h1>
+    
+    <div class="test-section">
+        <h3>Test Health Check Endpoint</h3>
+        <button onclick="testHealthCheck()">Test Health Check</button>
+        <div id="healthResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test CORS Preflight (OPTIONS)</h3>
+        <button onclick="testOptions()">Test OPTIONS Request</button>
+        <div id="optionsResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test Nomination Endpoint</h3>
+        <button onclick="testNomination()">Test Nomination API</button>
+        <div id="nominationResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test with Credentials</h3>
+        <button onclick="testWithCredentials()">Test with Credentials</button>
+        <div id="credentialsResult"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://serve-v1.evean.net/api/v1/serve-fulfill';
+        
+        function displayResult(elementId, success, message, data = null) {
+            const element = document.getElementById(elementId);
+            element.className = success ? 'test-section success' : 'test-section error';
+            element.innerHTML = `
+                <h4>${success ? '✅ Success' : '❌ Error'}</h4>
+                <p>${message}</p>
+                ${data ? `<pre>${JSON.stringify(data, null, 2)}</pre>` : ''}
+            `;
+        }
+
+        async function testHealthCheck() {
+            try {
+                const response = await fetch(`${API_BASE}/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayResult('healthResult', true, 'Health check successful!', data);
+                } else {
+                    displayResult('healthResult', false, `Health check failed: ${response.status} ${response.statusText}`, data);
+                }
+            } catch (error) {
+                displayResult('healthResult', false, `Network error: ${error.message}`);
+            }
+        }
+
+        async function testOptions() {
+            try {
+                const response = await fetch(`${API_BASE}/nomination/test/nominate/test`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'Content-Type'
+                    }
+                });
+                
+                const headers = {};
+                response.headers.forEach((value, key) => {
+                    headers[key] = value;
+                });
+                
+                if (response.ok) {
+                    displayResult('optionsResult', true, 'OPTIONS request successful!', {
+                        status: response.status,
+                        headers: headers
+                    });
+                } else {
+                    displayResult('optionsResult', false, `OPTIONS request failed: ${response.status} ${response.statusText}`, {
+                        status: response.status,
+                        headers: headers
+                    });
+                }
+            } catch (error) {
+                displayResult('optionsResult', false, `Network error: ${error.message}`);
+            }
+        }
+
+        async function testNomination() {
+            try {
+                const response = await fetch(`${API_BASE}/nomination/test/nominate/test`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        test: true
+                    })
+                });
+                
+                const data = await response.text();
+                
+                if (response.ok) {
+                    displayResult('nominationResult', true, 'Nomination endpoint accessible!', {
+                        status: response.status,
+                        data: data
+                    });
+                } else {
+                    displayResult('nominationResult', false, `Nomination endpoint failed: ${response.status} ${response.statusText}`, {
+                        status: response.status,
+                        data: data
+                    });
+                }
+            } catch (error) {
+                displayResult('nominationResult', false, `Network error: ${error.message}`);
+            }
+        }
+
+        async function testWithCredentials() {
+            try {
+                const response = await fetch(`${API_BASE}/health`, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayResult('credentialsResult', true, 'Request with credentials successful!', data);
+                } else {
+                    displayResult('credentialsResult', false, `Request with credentials failed: ${response.status} ${response.statusText}`, data);
+                }
+            } catch (error) {
+                displayResult('credentialsResult', false, `Network error: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html> 
