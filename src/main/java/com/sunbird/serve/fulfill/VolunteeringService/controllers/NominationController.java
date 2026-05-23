@@ -88,9 +88,10 @@ public class NominationController {
     public ResponseEntity<Nomination> updateNomination( @PathVariable String nominatedUserId,
             @PathVariable String nominationId,
             @RequestParam(required = true) NominationStatus status,
+            @RequestParam(required = false) String comments,
             @RequestHeader Map<String, String> headers) throws MessagingException {
 
-        Nomination nominations = nominationService.updateNomination(nominatedUserId,nominationId,status, headers);
+        Nomination nominations = nominationService.updateNomination(nominatedUserId, nominationId, status, comments, headers);
         nominationService.sendEmailToVolunteerAsync(nominatedUserId, status, nominations.getNeedId());
 
         return ResponseEntity.ok(nominations);

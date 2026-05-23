@@ -121,11 +121,14 @@ public class NominationService {
     }
 
     // Update nomination as confirm or reject
-    public Nomination updateNomination(String userId, String nominationId, NominationStatus status, Map<String, String> headers) {
+    public Nomination updateNomination(String userId, String nominationId, NominationStatus status, String comments, Map<String, String> headers) {
         Nomination nomination = nominationRepository.findById(UUID.fromString(nominationId)).get();
         //Need need = needRepository.findById(UUID.fromString(nomination.getNeedId())).get();
         UserStatusRequest userStatusRequest = new UserStatusRequest();
             nomination.setNominationStatus(status);
+            if (comments != null && !comments.trim().isEmpty()) {
+                nomination.setComments(comments);
+            }
             List<Nomination> nominationList = getAllNominations(nomination.getNeedId(), headers);
         String needStatus = "";
 
