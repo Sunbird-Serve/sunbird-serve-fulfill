@@ -27,6 +27,7 @@ import reactor.core.publisher.Mono;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 
 
@@ -40,7 +41,6 @@ import java.util.Map;
 import jakarta.validation.Valid;
 
 @RestController
-@CrossOrigin(origins = {"http://localhost:3000", "https://serve-v1.evean.net"}, allowCredentials = "true")
 public class FulfillmentController {
 
     private final FulfillmentService fulfillmentService;
@@ -58,6 +58,7 @@ public class FulfillmentController {
             @ApiResponse(responseCode = "500", description = "Server Error")}
     )
     @PostMapping("/fulfillment/{needId}")
+    @PreAuthorize("hasAnyRole('sAdmin', 'nAdmin', 'nCoordinator', 'vAdmin', 'vCoordinator')")
     public ResponseEntity<Fulfillment> createFulfillment( @PathVariable String needId,
             @Valid @RequestBody FulfillmentRequest request,
             @RequestHeader Map<String, String> headers) {
@@ -124,6 +125,7 @@ public class FulfillmentController {
             @ApiResponse(responseCode = "500", description = "Server Error")}
     )
     @PutMapping("/fulfillment/update/{fulfillmentId}")
+    @PreAuthorize("hasAnyRole('sAdmin', 'nAdmin', 'nCoordinator', 'vAdmin', 'vCoordinator')")
     public ResponseEntity<Fulfillment> updateFulfillment(
             @PathVariable UUID fulfillmentId,
             @Valid @RequestBody FulfillmentUpdateRequest updateRequest,
@@ -134,7 +136,8 @@ public class FulfillmentController {
     }
 
     @PostMapping("/fulfillment/sendEmail")
-public ResponseEntity<String> sendEmail(@RequestBody Map<String, Object> requestBody) {
+    @PreAuthorize("hasAnyRole('sAdmin', 'nAdmin', 'nCoordinator', 'vAdmin', 'vCoordinator')")
+    public ResponseEntity<String> sendEmail(@RequestBody Map<String, Object> requestBody) {
     try {
         // Extract the scenario type, needId, and deliverableDetails from the request body
         String scenarioType = (String) requestBody.get("scenarioType");

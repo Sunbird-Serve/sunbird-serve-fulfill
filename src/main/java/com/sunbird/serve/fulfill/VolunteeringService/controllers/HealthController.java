@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.HashMap;
 
 @RestController
-@CrossOrigin(origins = {"http://localhost:3000", "https://serve-v1.evean.net"}, allowCredentials = "true")
 public class HealthController {
 
     @Operation(summary = "Health Check", description = "Simple health check endpoint to verify CORS configuration")
