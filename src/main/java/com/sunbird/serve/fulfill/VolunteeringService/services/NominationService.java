@@ -90,11 +90,10 @@ public class NominationService {
         this.restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
     }
 
-    public Nomination nominateNeed(NominationRequest nominationRequest) {
+    public Nomination nominateNeed(NominationRequest nominationRequest, Map<String, String> headers) {
         try {
             // Convert NominationRequest to Nomination entity
             Nomination nomination = NominationMapper.mapToEntity(nominationRequest);
-            Map<String, String> headers = new HashMap<>(); 
             String status = nominationRequest.getStatus().toString();
             String apiNeedUrl = String.format("%s/api/v1/serve-need/need/status/%s?status=%s", serveNeedUrl, nomination.getNeedId(), status);
             ResponseEntity<Need> responseEntity = webClient.put()

@@ -68,7 +68,7 @@ public class NominationController {
         request.setNominatedUserId(nominatedUserId);
         request.setComments("");
         request.setStatus(NominationStatus.Nominated);
-        Nomination response = nominationService.nominateNeed(request);
+        Nomination response = nominationService.nominateNeed(request, headers);
 
         nominationService.fetchNCoordinatorEmail(needId,nominatedUserId);
         nominationService.fetchNominatedUserEmail(nominatedUserId);
